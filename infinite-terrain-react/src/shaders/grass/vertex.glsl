@@ -9,6 +9,19 @@ uniform float uLeanFactor;
 uniform vec3 uGrassBaseColor;
 uniform vec3 uGrassTopColor;
 
+// Flowers (procedural)
+uniform float uFlowersEnabled;     // 0.0/1.0
+uniform float uFlowerDensity;      // probability per blade (0..1)
+uniform float uFlowerNoiseScale;   // world-space noise UV scale for flower clustering
+uniform float uFlowerHeightBoost;  // extra blade height factor (0..)
+uniform float uFlowerTipStart;     // tip threshold (0..1)
+uniform float uFlowerBaseScale;    // overall width scale for flower blades (0..1)
+uniform float uFlowerExpand;       // widens tip for flower blades
+uniform vec3 uFlowerColorA;
+uniform vec3 uFlowerColorB;
+uniform vec3 uFlowerColorC;
+uniform vec3 uFlowerColorD;
+
 // Wind parameters
 uniform float uWindScale;
 uniform float uWindStrength;
@@ -30,6 +43,7 @@ uniform float uGrassFadeOffset;
 
 // Attributes
 attribute vec3 aInstancePosition; // per-blade base position in chunk space
+attribute float aStoneInfluence;  // 0..1, grass height reduction near stones
 
 // Varyings
 varying vec3 vColor;
@@ -37,6 +51,8 @@ varying vec4 vGrassData;         // x: local x, y: heightPercent, z: side, w: un
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
 varying float vTrailValue;       // trail intensity used in fragment for color tweak
+varying vec3 vFlowerColor;
+varying float vFlowerMask;
 
 #include includes.glsl
 
@@ -54,6 +70,23 @@ void main() {
   vec3 grassBladeWorldPos = (modelMatrix * vec4(grassOffset, 1.0)).xyz;
   vec2 worldXZ = grassBladeWorldPos.xz;  
   vec3 hashVal = hash(grassBladeWorldPos); // hash value for the blade
+
+  // Decide if this blade is a flower (stable in world space)
+  float hFlower = remap(hashVal.z, -1.0, 1.0, 0.0, 1.0);
+
+  // Modulate flower density by noise texture (clusters flowers naturally)
+  vec2 flowerNoiseUV = worldXZ * uFlowerNoiseScale * 0.1;
+  float flowerNoiseValue = texture2D(uNoiseTexture, flowerNoiseUV).r; // 0..1
+  float flowerDensity = clamp(uFlowerDensity * flowerNoiseValue, 0.0, 1.0);
+
+  float isFlower = uFlowersEnabled * step(1.0 - flowerDensity, hFlower);
+
+  // Pick a blossom color (stable)
+  float hColor = remap(hashVal.x, -1.0, 1.0, 0.0, 1.0);
+  vec3 flowerColor = uFlowerColorA;
+  flowerColor = mix(flowerColor, uFlowerColorB, step(0.25, hColor));
+  flowerColor = mix(flowerColor, uFlowerColorC, step(0.50, hColor));
+  flowerColor = mix(flowerColor, uFlowerColorD, step(0.75, hColor));
   
   // blade distance from center
   vec2 circleXZ = uCircleCenter.xz;
@@ -94,6 +127,10 @@ void main() {
   // height flattening from trail texture (bright → flattened)
   float flattenFactor = smoothstep(0.6, 1.0, trailValue) * radiusFade;
   grassHeight *= mix(1.0, grassMinHeight, flattenFactor);
+
+  // Fade grass height near stones (precomputed per instance in JS)
+  // Make sure it goes BELOW grassMinHeight near stones so it gets discarded.
+  grassHeight *= mix(1.0, grassMinHeight * 0.25, clamp(aStoneInfluence, 0.0, 1.0));
 
   // local trail direction for bending based on gradient (4-tap or 8-tap Sobel)
   vec2 bendDirXZ = vec2(0.0);
@@ -165,6 +202,15 @@ void main() {
   float randomHeight = (rand(float(gl_InstanceID)) * 2.0 - 1.0) * 0.2;
   float width = GRASS_WIDTH * easeOut(1.08 - heightPercent, 2.0) * grassHeight;
   float height = GRASS_HEIGHT * grassHeight + randomHeight;
+
+  // Make flower blades a bit taller than regular grass
+  height *= mix(1.0, 1.0 + max(uFlowerHeightBoost, 0.0), isFlower);
+
+  // Make the flower blade base thinner, but widen the very top so blossoms are visible
+  float flowerTipMask = smoothstep(uFlowerTipStart, 1.0, heightPercent);
+  float flowerBaseScale = mix(1.0, clamp(uFlowerBaseScale, 0.05, 1.0), isFlower);
+  float flowerExpand = mix(1.0, 1.0 + max(uFlowerExpand, 0.0), isFlower * flowerTipMask);
+  width *= (flowerBaseScale * flowerExpand);
 
   float x = (xSide - 0.5) * width;
   float y = heightPercent * height;
@@ -244,4 +290,6 @@ void main() {
   vWorldPosition = (modelMatrix * vec4(grassLocalPosition, 1.0)).xyz;
   vGrassData = vec4(x, heightPercent, xSide, grassMask);
   vTrailValue = trailValue * radiusFade;
+  vFlowerColor = flowerColor;
+  vFlowerMask = isFlower * flowerTipMask;
 }

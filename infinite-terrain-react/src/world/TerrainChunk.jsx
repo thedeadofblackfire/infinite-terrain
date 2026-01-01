@@ -3,10 +3,66 @@ import { RigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
 
 import Grass from './Grass.jsx'
+import Stones from './Stones.jsx'
 import useStore from '../stores/useStore.jsx'
+import { generateChunkStones } from './stoneUtils.js'
 
-export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrainMaterial, grassMaterial }) {
+export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrainMaterial, grassMaterial, stoneMaterial }) {
     const terrainParameters = useStore((s) => s.terrainParameters)
+    const stoneParameters = useStore((s) => s.stoneParameters)
+
+    const stoneField = useMemo(() => {
+        const capacity = 500 // keep instancedMesh capacity stable to avoid recreate/dispose glitches
+
+        // 1. Generate stones for THIS chunk (for rendering)
+        const current = generateChunkStones(x, z, size, noise2D, stoneParameters, terrainParameters)
+
+        // 2. Generate stones for 8 NEIGHBORS (for grass suppression at borders)
+        const neighbors = []
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                if (dx === 0 && dz === 0) continue // skip self
+
+                const neighborStones = generateChunkStones(x + dx, z + dz, size, noise2D, stoneParameters, terrainParameters).stones
+
+                // Adjust neighbor stone positions to be relative to THIS chunk's center
+                // Neighbor local X is relative to neighbor center.
+                // Neighbor center is (dx * size, dz * size) away from current center.
+                // So adjusted local pos = neighborLocal + (dx * size, dz * size)
+                for (const s of neighborStones) {
+                    neighbors.push({
+                        ...s,
+                        x: s.x + dx * size,
+                        z: s.z + dz * size,
+                    })
+                }
+            }
+        }
+
+        // Combine current stones + neighbor stones for grass suppression
+        const allStonesForGrass = [...current.stones, ...neighbors]
+
+        return {
+            instances: current.instances,
+            stones: allStonesForGrass,
+            capacity,
+        }
+    }, [
+        stoneParameters.enabled,
+        stoneParameters.count,
+        stoneParameters.minScale,
+        stoneParameters.maxScale,
+        stoneParameters.yOffset,
+        stoneParameters.color,
+        stoneParameters.noiseScale,
+        stoneParameters.noiseThreshold,
+        noise2D,
+        x,
+        z,
+        size,
+        terrainParameters.scale,
+        terrainParameters.amplitude,
+    ])
 
     // Geometry
     const geometry = useMemo(() => {
@@ -51,12 +107,17 @@ export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrai
                 size={size}
                 chunkX={x * size}
                 chunkZ={z * size}
+                chunkIndexX={x}
+                chunkIndexZ={z}
                 noise2D={noise2D}
                 noiseTexture={noiseTexture}
                 scale={terrainParameters.scale}
                 amplitude={terrainParameters.amplitude}
+                stones={stoneField.stones}
                 grassMaterial={grassMaterial}
             />
+
+            <Stones instances={stoneField.instances} maxCount={stoneField.capacity} stoneMaterial={stoneMaterial} />
         </group>
     )
 }

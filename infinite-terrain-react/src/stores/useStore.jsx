@@ -28,8 +28,8 @@ const useStore = create(
          * Terrain parameters
          */
         terrainParameters: {
-            color: '#908343', //#8d7d7d //#0c292e //#244462 //#3d3380 //908343
-            backgroundColor: '#9a9065', //#a38d8d //#0c1521 //#171c38 //#1b1738 //9a9065
+            color: '#908343', //#8d7d7d //#0c292e //#244462 //#3d3380 //908343 //#77863a
+            backgroundColor: '#9a9065', //#a38d8d //#0c1521 //#171c38 //#1b1738 //9a9065 //#5f9eb0
             chunkSize: 10,
             segments: 16,
             scale: 0.05,
@@ -57,7 +57,7 @@ const useStore = create(
          */
         ditheringParameters: {
             ditherMode: 'Bayer', // 'Diamond' | 'Bayer'
-            pixelSize: 2,
+            pixelSize: 1,
         },
         setDitheringParameters: (parameters) => {
             set({ ditheringParameters: parameters })
@@ -78,9 +78,43 @@ const useStore = create(
             windScale: 0.35,
             windStrength: 0.7,
             windSpeed: 1.0,
+
+            // Procedural flowers (small blossom at the tip of some blades)
+            flowersEnabled: true,
+            flowerDensity: 0.06, // ~3.5% of blades become flowers
+            flowerNoiseScale: 0.26, // noise UV scale used to cluster flower density
+            flowerHeightBoost: 0.13, // flower blades are slightly taller than grass
+            flowerTipStart: 0.68, // where on the blade (0..1) blossoms start
+            flowerBaseScale: 1.0, // make flower blades thinner at the base
+            flowerExpand: 2.25, // widens the blade near the tip for visible blossoms
+            flowerColorA: '#ffffff', // white
+            flowerColorB: '#ffcc00', // yellow
+            flowerColorC: '#ff73be', // pink
+            flowerColorD: '#9b6eff', // blue-ish
         },
         setGrassParameters: (parameters) => {
             set({ grassParameters: parameters })
+        },
+
+        /**
+         * Stone parameters
+         */
+        stoneParameters: {
+            enabled: true,
+            count: 10, // per chunk
+            minScale: 0.4,
+            maxScale: 1.2,
+            yOffset: 0.02,
+            color: '#adadad',
+            noiseScale: 0.15,
+            noiseThreshold: 0.55,
+
+            // Grass suppression around stones (computed from actual stone instances)
+            grassClearRadiusMultiplier: 0.8, // >1 means grass clears a bit beyond the stone mesh
+            grassFadeWidth: 0.8, // extra fade distance beyond the clear radius
+        },
+        setStoneParameters: (parameters) => {
+            set({ stoneParameters: parameters })
         },
 
         /**

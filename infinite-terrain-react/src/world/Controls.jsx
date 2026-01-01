@@ -6,6 +6,7 @@ export default function Controls() {
     const borderParameters = useStore((state) => state.borderParameters)
     const ditheringParameters = useStore((state) => state.ditheringParameters)
     const grassParameters = useStore((state) => state.grassParameters)
+    const stoneParameters = useStore((state) => state.stoneParameters)
     const trailParameters = useStore((state) => state.trailParameters)
     const ballParameters = useStore((state) => state.ballParameters)
     const perfVisible = useStore((state) => state.perfVisible)
@@ -219,6 +220,144 @@ export default function Controls() {
             max: 2,
             step: 0.01,
             onChange: setParam('grassParameters', 'windSpeed'),
+        },
+    })
+
+    /**
+     * Flowers (procedural on grass shader)
+     */
+    useControls('Flowers', {
+        enabled: {
+            value: grassParameters.flowersEnabled,
+            onChange: setParam('grassParameters', 'flowersEnabled'),
+        },
+        density: {
+            value: grassParameters.flowerDensity,
+            min: 0,
+            max: 0.25,
+            step: 0.001,
+            onChange: setParam('grassParameters', 'flowerDensity'),
+        },
+        noiseScale: {
+            value: grassParameters.flowerNoiseScale,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('grassParameters', 'flowerNoiseScale'),
+        },
+        heightBoost: {
+            value: grassParameters.flowerHeightBoost,
+            min: 0,
+            max: 0.75,
+            step: 0.01,
+            onChange: setParam('grassParameters', 'flowerHeightBoost'),
+        },
+        baseScale: {
+            value: grassParameters.flowerBaseScale,
+            min: 0.1,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('grassParameters', 'flowerBaseScale'),
+        },
+        tipStart: {
+            value: grassParameters.flowerTipStart,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('grassParameters', 'flowerTipStart'),
+        },
+        tipWiden: {
+            value: grassParameters.flowerExpand,
+            min: 0.0,
+            max: 5.0,
+            step: 0.01,
+            onChange: setParam('grassParameters', 'flowerExpand'),
+        },
+        colorA: {
+            value: grassParameters.flowerColorA,
+            onChange: setParam('grassParameters', 'flowerColorA'),
+        },
+        colorB: {
+            value: grassParameters.flowerColorB,
+            onChange: setParam('grassParameters', 'flowerColorB'),
+        },
+        colorC: {
+            value: grassParameters.flowerColorC,
+            onChange: setParam('grassParameters', 'flowerColorC'),
+        },
+        colorD: {
+            value: grassParameters.flowerColorD,
+            onChange: setParam('grassParameters', 'flowerColorD'),
+        },
+    })
+
+    /**
+     * Stones (instanced)
+     */
+    useControls('Stones', {
+        enabled: {
+            value: stoneParameters.enabled,
+            onChange: setParam('stoneParameters', 'enabled'),
+        },
+        count: {
+            value: stoneParameters.count,
+            min: 0,
+            max: 500,
+            step: 1,
+            onChange: setParam('stoneParameters', 'count'),
+        },
+        minScale: {
+            value: stoneParameters.minScale,
+            min: 0.05,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'minScale'),
+        },
+        maxScale: {
+            value: stoneParameters.maxScale,
+            min: 0.05,
+            max: 3.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'maxScale'),
+        },
+        yOffset: {
+            value: stoneParameters.yOffset,
+            min: -1.0,
+            max: 1.0,
+            step: 0.001,
+            onChange: setParam('stoneParameters', 'yOffset'),
+        },
+        color: {
+            value: stoneParameters.color,
+            onChange: setParam('stoneParameters', 'color'),
+        },
+        noiseScale: {
+            value: stoneParameters.noiseScale,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'noiseScale'),
+        },
+        noiseThreshold: {
+            value: stoneParameters.noiseThreshold,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'noiseThreshold'),
+        },
+        grassClearRadiusMultiplier: {
+            value: stoneParameters.grassClearRadiusMultiplier,
+            min: 0.0,
+            max: 3.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'grassClearRadiusMultiplier'),
+        },
+        grassFadeWidth: {
+            value: stoneParameters.grassFadeWidth,
+            min: 0.0,
+            max: 3.0,
+            step: 0.01,
+            onChange: setParam('stoneParameters', 'grassFadeWidth'),
         },
     })
 

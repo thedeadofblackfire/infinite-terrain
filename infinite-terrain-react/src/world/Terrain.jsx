@@ -14,6 +14,8 @@ import terrainVertexShader from '../shaders/terrain/vertex.glsl'
 import terrainFragmentShader from '../shaders/terrain/fragment.glsl'
 import grassVertexShader from '../shaders/grass/vertex.glsl'
 import grassFragmentShader from '../shaders/grass/fragment.glsl'
+import stonesVertexShader from '../shaders/stones/vertex.glsl'
+import stonesFragmentShader from '../shaders/stones/fragment.glsl'
 
 export default function Terrain() {
     const [activeChunks, setActiveChunks] = useState([])
@@ -26,6 +28,7 @@ export default function Terrain() {
     const terrainParameters = useStore((s) => s.terrainParameters)
     const borderParameters = useStore((s) => s.borderParameters)
     const grassParameters = useStore((s) => s.grassParameters)
+    const stoneParameters = useStore((s) => s.stoneParameters)
     const trailParameters = useStore((s) => s.trailParameters)
     const ditheringParameters = useStore((s) => s.ditheringParameters)
     const setBorderParameters = useStore((s) => s.setBorderParameters)
@@ -77,7 +80,6 @@ export default function Terrain() {
                     uPixelSize: { value: ditheringParameters.pixelSize },
                     uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
                     uTime: { value: 0 },
-                    uResolution: { value: new THREE.Vector2(1, 1) },
                     uGrassSegments: { value: grassParameters.segmentsCount },
                     uGrassChunkSize: { value: chunkSize },
                     uGrassWidth: { value: grassParameters.width },
@@ -85,6 +87,19 @@ export default function Terrain() {
                     uGrassBaseColor: { value: new THREE.Color(grassParameters.colorBase) },
                     uGrassTopColor: { value: new THREE.Color(grassParameters.colorTop) },
                     uLeanFactor: { value: grassParameters.leanFactor },
+
+                    // Flowers (procedural)
+                    uFlowersEnabled: { value: grassParameters.flowersEnabled ? 1.0 : 0.0 },
+                    uFlowerDensity: { value: grassParameters.flowerDensity },
+                    uFlowerNoiseScale: { value: grassParameters.flowerNoiseScale },
+                    uFlowerHeightBoost: { value: grassParameters.flowerHeightBoost },
+                    uFlowerTipStart: { value: grassParameters.flowerTipStart },
+                    uFlowerBaseScale: { value: grassParameters.flowerBaseScale },
+                    uFlowerExpand: { value: grassParameters.flowerExpand },
+                    uFlowerColorA: { value: new THREE.Color(grassParameters.flowerColorA) },
+                    uFlowerColorB: { value: new THREE.Color(grassParameters.flowerColorB) },
+                    uFlowerColorC: { value: new THREE.Color(grassParameters.flowerColorC) },
+                    uFlowerColorD: { value: new THREE.Color(grassParameters.flowerColorD) },
 
                     uWindScale: { value: grassParameters.windScale },
                     uWindStrength: { value: grassParameters.windStrength },
@@ -110,13 +125,39 @@ export default function Terrain() {
         [grassParameters, chunkSize, trailParameters.chunkSize, noiseTexture, borderParameters, ditheringParameters]
     )
 
+    // Stone material (shader) - shared across all chunks
+    const stoneMaterial = useMemo(() => {
+        return new THREE.ShaderMaterial({
+            uniforms: {
+                uPixelSize: { value: ditheringParameters.pixelSize },
+                uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
+
+                uStoneColor: { value: new THREE.Color(stoneParameters.color) },
+
+                // Border fade (match grass)
+                uCircleCenter: { value: new THREE.Vector3() },
+                uChunkSize: { value: chunkSize },
+                uNoiseTexture: { value: noiseTexture },
+                uNoiseStrength: { value: borderParameters.noiseStrength },
+                uNoiseScale: { value: borderParameters.noiseScale },
+                uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
+                uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
+            },
+            vertexShader: stonesVertexShader,
+            fragmentShader: stonesFragmentShader,
+            vertexColors: false,
+            side: THREE.FrontSide,
+        })
+    }, [stoneParameters.color, chunkSize, noiseTexture, borderParameters, ditheringParameters])
+
     // Cleanup materials on unmount
     useEffect(() => {
         return () => {
             terrainMaterial.dispose()
             grassMaterial.dispose()
+            stoneMaterial.dispose()
         }
-    }, [terrainMaterial, grassMaterial])
+    }, [terrainMaterial, grassMaterial, stoneMaterial])
 
     // Handle radius animation
     const handleRadiusAnimation = () => {
@@ -132,6 +173,7 @@ export default function Terrain() {
         // Set initial radius to 0.2
         terrainMaterial.uniforms.uCircleRadiusFactor.value = startRadius
         grassMaterial.uniforms.uCircleRadiusFactor.value = startRadius
+        stoneMaterial.uniforms.uCircleRadiusFactor.value = startRadius
 
         // Create animation object for GSAP to animate
         const radiusObj = { value: startRadius }
@@ -145,13 +187,9 @@ export default function Terrain() {
                 // Update both materials' circle radius factor
                 terrainMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
                 grassMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
+                stoneMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
             },
             onComplete: () => {
-                // Update store to keep values in sync
-                setBorderParameters({
-                    ...borderParameters,
-                    circleRadiusFactor: targetRadius,
-                })
                 radiusAnimationRef.current = null
             },
         })
@@ -188,6 +226,9 @@ export default function Terrain() {
         grassMaterial.uniforms.uBallPosition.value.copy(state.ballPosition)
         grassMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
 
+        // Update stones uniforms (no rerenders required)
+        stoneMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+
         // Chunk management
         const ballPosition = state.ballPosition
         const safeChunkSize = Math.max(0.0001, chunkSize)
@@ -223,6 +264,7 @@ export default function Terrain() {
                     noiseTexture={noiseTexture}
                     terrainMaterial={terrainMaterial}
                     grassMaterial={grassMaterial}
+                    stoneMaterial={stoneMaterial}
                 />
             ))}
         </group>

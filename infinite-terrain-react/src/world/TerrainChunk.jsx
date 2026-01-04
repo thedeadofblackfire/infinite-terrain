@@ -7,7 +7,7 @@ import Stones from './Stones.jsx'
 import useStore from '../stores/useStore.jsx'
 import { generateChunkStones } from './stoneUtils.js'
 
-export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrainMaterial, grassMaterial, stoneMaterial }) {
+export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry }) {
     const terrainParameters = useStore((s) => s.terrainParameters)
     const stoneParameters = useStore((s) => s.stoneParameters)
 
@@ -18,12 +18,22 @@ export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrai
         const current = generateChunkStones(x, z, size, noise2D, stoneParameters, terrainParameters)
 
         // 2. Generate stones for 8 NEIGHBORS (for grass suppression at borders)
+        // Pass skipMatrices=true to save performance
         const neighbors = []
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
                 if (dx === 0 && dz === 0) continue // skip self
 
-                const neighborStones = generateChunkStones(x + dx, z + dz, size, noise2D, stoneParameters, terrainParameters).stones
+                const neighborStones = generateChunkStones(
+                    x + dx,
+                    z + dz,
+                    size,
+                    noise2D,
+                    stoneParameters,
+                    terrainParameters,
+                    true, // skipMatrices
+                    true // minimalData (skip height/rotation calc)
+                ).stones
 
                 // Adjust neighbor stone positions to be relative to THIS chunk's center
                 // Neighbor local X is relative to neighbor center.
@@ -45,6 +55,7 @@ export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrai
         return {
             instances: current.instances,
             stones: allStonesForGrass,
+            currentStones: current.stones, // Pass raw data of current stones for physics
             capacity,
         }
     }, [
@@ -53,7 +64,6 @@ export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrai
         stoneParameters.minScale,
         stoneParameters.maxScale,
         stoneParameters.yOffset,
-        stoneParameters.color,
         stoneParameters.noiseScale,
         stoneParameters.noiseThreshold,
         noise2D,
@@ -117,7 +127,7 @@ export default function TerrainChunk({ x, z, size, noise2D, noiseTexture, terrai
                 grassMaterial={grassMaterial}
             />
 
-            <Stones instances={stoneField.instances} maxCount={stoneField.capacity} stoneMaterial={stoneMaterial} />
+            <Stones stones={stoneField.currentStones} maxCount={stoneField.capacity} stoneMaterial={stoneMaterial} stoneGeometry={stoneGeometry} />
         </group>
     )
 }

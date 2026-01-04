@@ -28,8 +28,8 @@ const useStore = create(
          * Terrain parameters
          */
         terrainParameters: {
-            color: '#908343', //#8d7d7d //#0c292e //#244462 //#3d3380 //908343 //#77863a
-            backgroundColor: '#9a9065', //#a38d8d //#0c1521 //#171c38 //#1b1738 //9a9065 //#5f9eb0
+            color: '#3f5553', //#8d7d7d //#0c292e //#244462 //#3d3380 //908343 //#77863a //#3f5553 //#766840
+            backgroundColor: '#203a3b', //#a38d8d //#0c1521 //#171c38 //#1b1738 //9a9065 //#5f9eb0 //#203a3b //#554832
             chunkSize: 10,
             segments: 16,
             scale: 0.05,
@@ -41,9 +41,9 @@ const useStore = create(
 
         /**Border parameters */
         borderParameters: {
-            noiseStrength: 0.75,
+            noiseStrength: 0.45,
             noiseScale: 0.35,
-            circleRadiusFactor: 0.65,
+            circleRadiusFactor: 0.75,
             grassFadeOffset: 3.5,
             groundOffset: -0.75,
             groundFadeOffset: 1.0,
@@ -56,7 +56,7 @@ const useStore = create(
          * Dithering parameters
          */
         ditheringParameters: {
-            ditherMode: 'Bayer', // 'Diamond' | 'Bayer'
+            ditherMode: 'Diamond', // 'Diamond' | 'Bayer'
             pixelSize: 1,
         },
         setDitheringParameters: (parameters) => {
@@ -67,8 +67,8 @@ const useStore = create(
          * Grass parameters
          */
         grassParameters: {
-            colorBase: '#669019', //#375da0 //#044537 #6f4108 //669019
-            colorTop: '#acc125', //#6280a0 //#0d655b #c17c05 //acc125
+            colorBase: '#396c18', //#375da0 //#044537 #6f4108 //669019 //#396c18 //#624c1e
+            colorTop: '#77aa1a', //#6280a0 //#0d655b #c17c05 //acc125 //#77aa1a //#eb9538
             count: 2500,
             segmentsCount: 4,
             width: 0.15,
@@ -81,7 +81,7 @@ const useStore = create(
 
             // Procedural flowers (small blossom at the tip of some blades)
             flowersEnabled: true,
-            flowerDensity: 0.06, // ~3.5% of blades become flowers
+            flowerDensity: 0.02, // ~3.5% of blades become flowers
             flowerNoiseScale: 0.26, // noise UV scale used to cluster flower density
             flowerHeightBoost: 0.13, // flower blades are slightly taller than grass
             flowerTipStart: 0.68, // where on the blade (0..1) blossoms start
@@ -90,7 +90,7 @@ const useStore = create(
             flowerColorA: '#ffffff', // white
             flowerColorB: '#ffcc00', // yellow
             flowerColorC: '#ff73be', // pink
-            flowerColorD: '#9b6eff', // blue-ish
+            flowerColorD: '#6e8dff', // blue-ish
         },
         setGrassParameters: (parameters) => {
             set({ grassParameters: parameters })
@@ -105,13 +105,13 @@ const useStore = create(
             minScale: 0.4,
             maxScale: 1.2,
             yOffset: 0.02,
-            color: '#adadad',
+            color: '#adadad', //#707e89
             noiseScale: 0.15,
             noiseThreshold: 0.55,
 
             // Grass suppression around stones (computed from actual stone instances)
             grassClearRadiusMultiplier: 0.8, // >1 means grass clears a bit beyond the stone mesh
-            grassFadeWidth: 0.8, // extra fade distance beyond the clear radius
+            grassFadeWidth: 0.4, // extra fade distance beyond the clear radius
         },
         setStoneParameters: (parameters) => {
             set({ stoneParameters: parameters })

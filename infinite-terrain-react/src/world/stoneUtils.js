@@ -20,25 +20,43 @@ export function smoothstep(edge0, edge1, x) {
     return t * t * (3 - 2 * t)
 }
 
-// Deterministically generate stones for a single chunk
-export function generateChunkStones(
-    chunkX, // index
-    chunkZ, // index
-    size,
-    noise2D,
-    stoneParameters,
-    terrainParameters
-) {
-    // Return minimal structure if invalid
-    if (!stoneParameters.enabled || !noise2D) return { instances: [], stones: [] }
+// Global cache for stone placements
+// We cache the "candidates" (positions/seeds) so we don't re-run the expensive grid search + noise for every neighbor query.
+const placementCache = new Map()
+let lastPlacementSettings = ''
 
+function getCachedPlacements(chunkX, chunkZ, size, noise2D, stoneParameters) {
+    // Parameters that affect the *selection* of stones
+    // Note: We don't include visual params like scale/color/yOffset here, only placement logic.
     const maxCount = Math.max(0, Math.floor(stoneParameters.count))
-    if (maxCount === 0) return { instances: [], stones: [] }
+    if (maxCount === 0) return []
 
+    // Create a signature for parameters that affect placement
+    const settings = {
+        seedPrefix: 'v1',
+        count: maxCount,
+        noiseScale: stoneParameters.noiseScale,
+        noiseThreshold: stoneParameters.noiseThreshold,
+        size: size,
+    }
+
+    const settingsHash = JSON.stringify(settings)
+    if (settingsHash !== lastPlacementSettings) {
+        placementCache.clear()
+        lastPlacementSettings = settingsHash
+    }
+
+    const key = `${chunkX},${chunkZ}`
+    if (placementCache.has(key)) {
+        return placementCache.get(key)
+    }
+
+    // --- Generation Logic (Copied/Refactored from original) ---
     const chunkWorldX = chunkX * size
     const chunkWorldZ = chunkZ * size
 
-    const cells = 8
+    const minCells = Math.ceil(Math.sqrt(maxCount * 2.5))
+    const cells = Math.max(8, minCells)
     const cellSize = size / cells
 
     const candidates = []
@@ -62,7 +80,6 @@ export function generateChunkStones(
             const n01 = (n + 1) * 0.5
             if (n01 < stoneParameters.noiseThreshold) continue
 
-            // Score defines ordering
             const score = n01 + rng() * 0.2
 
             candidates.push({
@@ -77,6 +94,31 @@ export function generateChunkStones(
     candidates.sort((a, b) => b.score - a.score)
     const chosen = candidates.slice(0, maxCount)
 
+    placementCache.set(key, chosen)
+    return chosen
+}
+
+// Deterministically generate stones for a single chunk
+export function generateChunkStones(
+    chunkX, // index
+    chunkZ, // index
+    size,
+    noise2D,
+    stoneParameters,
+    terrainParameters,
+    skipMatrices = false,
+    minimalData = false // New flag: skip expensive noise/y calculations if we only need x/z/scale
+) {
+    // Return minimal structure if invalid
+    if (!stoneParameters.enabled || !noise2D) return { instances: [], stones: [] }
+
+    // 1. Get Placements (Cached)
+    const chosen = getCachedPlacements(chunkX, chunkZ, size, noise2D, stoneParameters)
+    if (!chosen || chosen.length === 0) return { instances: [], stones: [] }
+
+    const chunkWorldX = chunkX * size
+    const chunkWorldZ = chunkZ * size
+
     const instances = []
     const stones = []
     const dummy = new THREE.Object3D()
@@ -86,23 +128,58 @@ export function generateChunkStones(
 
         const worldX = c.localX + chunkWorldX
         const worldZ = c.localZ + chunkWorldZ
-        const y = noise2D(worldX * terrainParameters.scale, worldZ * terrainParameters.scale) * terrainParameters.amplitude
+
+        // Optimization: For grass suppression (minimalData), we don't need Y height.
+        // Skipping noise2D saves significant CPU when generating 8 neighbors.
+        const y = minimalData ? 0 : noise2D(worldX * terrainParameters.scale, worldZ * terrainParameters.scale) * terrainParameters.amplitude
 
         const baseScale = THREE.MathUtils.lerp(stoneParameters.minScale, stoneParameters.maxScale, rng())
         const yScale = baseScale * THREE.MathUtils.lerp(0.55, 0.95, rng())
 
         const centerY = y + stoneParameters.yOffset + yScale * 0.25
+
+        // Visual Improvements:
+        // 1. Random Y rotation
         const rotY = rng() * Math.PI * 2
+        // 2. Slight random tilt on X and Z
+        const rotX = (rng() - 0.5) * 0.5
+        const rotZ = (rng() - 0.5) * 0.5
 
-        dummy.position.set(c.localX, centerY, c.localZ)
-        dummy.rotation.y = rotY
-        dummy.scale.set(baseScale, yScale, baseScale)
-        dummy.updateMatrix()
+        // 3. Non-uniform footprint
+        const scaleX = baseScale * (0.8 + rng() * 0.4)
+        const scaleZ = baseScale * (0.8 + rng() * 0.4)
 
-        instances.push({ matrix: dummy.matrix.clone() })
+        if (!skipMatrices && !minimalData) {
+            dummy.position.set(c.localX, centerY, c.localZ)
+            dummy.rotation.set(rotX, rotY, rotZ)
+            dummy.scale.set(scaleX, yScale, scaleZ)
+            dummy.updateMatrix()
+            instances.push({ matrix: dummy.matrix.clone() })
+        }
 
-        // Store stone center + scales for grass suppression (chunk-local space)
-        stones.push({ x: c.localX, y: centerY, z: c.localZ, rx: baseScale, ry: yScale, rotY })
+        // Store stone data.
+        if (minimalData) {
+            // For grass/neighbors, we only need footprint info
+            stones.push({
+                x: c.localX,
+                z: c.localZ,
+                scaleX,
+                scaleZ,
+                // y, rotX, rotY, rotZ not needed for grass
+            })
+        } else {
+            stones.push({
+                x: c.localX,
+                y: centerY,
+                z: c.localZ,
+                scaleX,
+                scaleY: yScale,
+                scaleZ,
+                rotX,
+                rotY,
+                rotZ,
+            })
+        }
     }
 
     return { instances, stones }

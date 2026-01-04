@@ -81,12 +81,19 @@ void main() {
 
   float isFlower = uFlowersEnabled * step(1.0 - flowerDensity, hFlower);
 
-  // Pick a blossom color (stable)
-  float hColor = remap(hashVal.x, -1.0, 1.0, 0.0, 1.0);
+  // Pick a blossom color based on spatial noise (grouped colors)
+  // Use a different scale/offset to create color zones independent of density clusters
+  vec2 colorNoiseUV = worldXZ * uFlowerNoiseScale * 0.05 + vec2(123.4, 567.8);
+  float colorNoiseValue = texture2D(uNoiseTexture, colorNoiseUV).r;
+  
+  // Add a little bit of per-blade noise to fuzz the boundaries between color groups
+  colorNoiseValue += (hFlower - 0.5) * 0.2;
+  colorNoiseValue = clamp(colorNoiseValue, 0.0, 1.0);
+
   vec3 flowerColor = uFlowerColorA;
-  flowerColor = mix(flowerColor, uFlowerColorB, step(0.25, hColor));
-  flowerColor = mix(flowerColor, uFlowerColorC, step(0.50, hColor));
-  flowerColor = mix(flowerColor, uFlowerColorD, step(0.75, hColor));
+  flowerColor = mix(flowerColor, uFlowerColorB, step(0.25, colorNoiseValue));
+  flowerColor = mix(flowerColor, uFlowerColorC, step(0.50, colorNoiseValue));
+  flowerColor = mix(flowerColor, uFlowerColorD, step(0.75, colorNoiseValue));
   
   // blade distance from center
   vec2 circleXZ = uCircleCenter.xz;

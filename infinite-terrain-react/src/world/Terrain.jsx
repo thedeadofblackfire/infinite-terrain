@@ -150,14 +150,20 @@ export default function Terrain() {
         })
     }, [stoneParameters.color, chunkSize, noiseTexture, borderParameters, ditheringParameters])
 
+    // Shared stone geometry
+    const stoneGeometry = useMemo(() => {
+        return new THREE.IcosahedronGeometry(1, 0)
+    }, [])
+
     // Cleanup materials on unmount
     useEffect(() => {
         return () => {
             terrainMaterial.dispose()
             grassMaterial.dispose()
             stoneMaterial.dispose()
+            stoneGeometry.dispose()
         }
-    }, [terrainMaterial, grassMaterial, stoneMaterial])
+    }, [terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry])
 
     // Handle radius animation
     const handleRadiusAnimation = () => {
@@ -265,6 +271,7 @@ export default function Terrain() {
                     terrainMaterial={terrainMaterial}
                     grassMaterial={grassMaterial}
                     stoneMaterial={stoneMaterial}
+                    stoneGeometry={stoneGeometry}
                 />
             ))}
         </group>

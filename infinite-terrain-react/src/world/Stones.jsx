@@ -1,35 +1,33 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
+import { InstancedRigidBodies } from '@react-three/rapier'
 
-export default function Stones({ instances, maxCount, stoneMaterial }) {
-    const meshRef = useRef()
+export default function Stones({ stones, maxCount, stoneMaterial, stoneGeometry }) {
+    const instances = useMemo(() => {
+        if (!stones) return []
+        return stones.map((stone, i) => ({
+            key: 'stone_' + i,
+            position: [stone.x, stone.y, stone.z],
+            rotation: [stone.rotX || 0, stone.rotY, stone.rotZ || 0],
+            scale: [stone.scaleX, stone.scaleY, stone.scaleZ],
+        }))
+    }, [stones])
 
-    const geometry = useMemo(() => {
-        // Low-poly stone
-        return new THREE.IcosahedronGeometry(1, 0)
-    }, [])
+    // If no stones, we can render nothing. But we usually keep the mesh mounted with count=0.
+    // InstancedRigidBodies manages the instanceMatrix of the child instancedMesh.
+    // If instances array is empty, it should handle it gracefully or we render nothing.
 
-    useEffect(() => {
-        return () => {
-            geometry.dispose()
-        }
-    }, [geometry])
+    if (!instances || instances.length === 0) {
+        return null
+    }
 
-    useLayoutEffect(() => {
-        const mesh = meshRef.current
-        if (!mesh) return
-
-        const count = instances?.length ?? 0
-        mesh.count = Math.min(count, maxCount)
-
-        for (let i = 0; i < mesh.count; i++) {
-            mesh.setMatrixAt(i, instances[i].matrix)
-        }
-
-        mesh.instanceMatrix.needsUpdate = true
-    }, [instances, maxCount])
-
-    // Always keep the instanced mesh mounted so R3F doesn't dispose shared geometry when instances temporarily become empty.
-    // We just set mesh.count = 0 above when there's nothing to draw.
-    return <instancedMesh ref={meshRef} args={[geometry, stoneMaterial, maxCount]} frustumCulled={false} />
+    return (
+        <InstancedRigidBodies
+            instances={instances}
+            type="fixed"
+            colliders="hull" // Optimized: "hull" is much faster/stable than "trimesh" for convex shapes
+        >
+            <instancedMesh args={[stoneGeometry, stoneMaterial, maxCount]} count={instances.length} frustumCulled={false} />
+        </InstancedRigidBodies>
+    )
 }

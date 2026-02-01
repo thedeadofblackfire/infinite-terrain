@@ -35,9 +35,6 @@ const useStore = create(
             scale: 0.05,
             amplitude: 2,
         },
-        setTerrainParameters: (parameters) => {
-            set({ terrainParameters: parameters })
-        },
 
         /**Border parameters */
         borderParameters: {
@@ -58,9 +55,6 @@ const useStore = create(
         ditheringParameters: {
             ditherMode: 'Diamond', // 'Diamond' | 'Bayer'
             pixelSize: 1,
-        },
-        setDitheringParameters: (parameters) => {
-            set({ ditheringParameters: parameters })
         },
 
         /**
@@ -92,9 +86,6 @@ const useStore = create(
             flowerColorC: '#ff73be', // pink
             flowerColorD: '#6e8dff', // blue-ish
         },
-        setGrassParameters: (parameters) => {
-            set({ grassParameters: parameters })
-        },
 
         /**
          * Stone parameters
@@ -113,9 +104,6 @@ const useStore = create(
             grassClearRadiusMultiplier: 0.8, // >1 means grass clears a bit beyond the stone mesh
             grassFadeWidth: 0.4, // extra fade distance beyond the clear radius
         },
-        setStoneParameters: (parameters) => {
-            set({ stoneParameters: parameters })
-        },
 
         /**
          * Trail parameters
@@ -127,8 +115,37 @@ const useStore = create(
             glowAlpha: 0.3,
             showCanvas: false,
         },
-        setTrailParameters: (parameters) => {
-            set({ trailParameters: parameters })
+
+        /**
+         * Tree parameters
+         */
+        treeParameters: {
+            leavesColor: '#cb3e0b', //#701a13 //#c14b30 //#141f3b //#2956c7 //#de2d0d //#175803 //a04009 //#33156c //#204a11
+            trunkColorA: '#ffffff',
+            trunkColorB: '#000000',
+
+            // Bush/leaves material controls (Leva)
+            bushWiggleStrength: 0.09,
+            bushWiggleSpeed: 0.53,
+            bushWorldNoiseScale: 0.17,
+            bushUvWiggleScale: 0.56,
+            bushNoiseMix: 0.35, // 0 = only world, 1 = only UV
+
+            bushFresnelPower: 1.83, //2.64
+            bushFresnelStrength: 0.25, //0.10
+            bushFresnelColor: '#ffcc00', //#005cff //#00e2ff //#894185 //#ce1ac5 //#6c6bd8 //#a6ff00 //ffc900 //#8987ff //#84cd27
+
+            bushAlphaTest: 0.90,
+
+            // Tree bone wind controls (Leva)
+            boneAngleMax: 0.18, // radians
+            boneSpeedMul: 1.67,
+            boneNoiseStrength: 0.34,
+            boneNoiseScale: 0.5,
+            boneNoiseSpeed: 0.35,
+            boneXFactor: 0.35,
+            boneZFactor: 0.10,
+            boneParentInfluence: 0.12, // 0 = each bone independent, 1 = fully follows parent sway
         },
 
         /**
@@ -136,9 +153,6 @@ const useStore = create(
          */
         ballParameters: {
             color: '#582ec7', // Changed from red to purple/blue-ish by default
-        },
-        setBallParameters: (parameters) => {
-            set({ ballParameters: parameters })
         },
 
         /**

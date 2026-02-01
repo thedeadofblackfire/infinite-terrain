@@ -7,6 +7,7 @@ export default function Controls() {
     const ditheringParameters = useStore((state) => state.ditheringParameters)
     const grassParameters = useStore((state) => state.grassParameters)
     const stoneParameters = useStore((state) => state.stoneParameters)
+    const treeParameters = useStore((state) => state.treeParameters)
     const trailParameters = useStore((state) => state.trailParameters)
     const ballParameters = useStore((state) => state.ballParameters)
     const perfVisible = useStore((state) => state.perfVisible)
@@ -358,6 +359,146 @@ export default function Controls() {
             max: 3.0,
             step: 0.01,
             onChange: setParam('stoneParameters', 'grassFadeWidth'),
+        },
+    })
+
+    /**
+     * Tree parameters
+     */
+    useControls('Tree/Leaves', {
+        leavesColor: {
+            value: treeParameters.leavesColor,
+            onChange: setParam('treeParameters', 'leavesColor'),
+        },
+        alphaTest: {
+            value: treeParameters.bushAlphaTest,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushAlphaTest'),
+        },
+
+        wiggleStrength: {
+            value: treeParameters.bushWiggleStrength,
+            min: 0.0,
+            max: 0.5,
+            step: 0.001,
+            onChange: setParam('treeParameters', 'bushWiggleStrength'),
+        },
+        wiggleSpeed: {
+            value: treeParameters.bushWiggleSpeed,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushWiggleSpeed'),
+        },
+        worldNoiseScale: {
+            value: treeParameters.bushWorldNoiseScale,
+            min: 0.0,
+            max: 5.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushWorldNoiseScale'),
+        },
+        uvNoiseScale: {
+            value: treeParameters.bushUvWiggleScale,
+            min: 0.0,
+            max: 10.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushUvWiggleScale'),
+        },
+        noiseMix: {
+            value: treeParameters.bushNoiseMix,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushNoiseMix'),
+        },
+
+        fresnelPower: {
+            value: treeParameters.bushFresnelPower,
+            min: 0.1,
+            max: 8.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'bushFresnelPower'),
+        },
+        fresnelStrength: {
+            value: treeParameters.bushFresnelStrength,
+            min: 0.0,
+            max: 1.0,
+            step: 0.001,
+            onChange: setParam('treeParameters', 'bushFresnelStrength'),
+        },
+        fresnelColor: {
+            value: treeParameters.bushFresnelColor,
+            onChange: setParam('treeParameters', 'bushFresnelColor'),
+        },
+    })
+
+    useControls('Tree/Trunk', {
+        colorA: {
+            value: treeParameters.trunkColorA,
+            onChange: setParam('treeParameters', 'trunkColorA'),
+        },
+        colorB: {
+            value: treeParameters.trunkColorB,
+            onChange: setParam('treeParameters', 'trunkColorB'),
+        },
+        
+        angleMax: {
+            value: treeParameters.boneAngleMax,
+            min: 0.0,
+            max: 0.6,
+            step: 0.001,
+            onChange: setParam('treeParameters', 'boneAngleMax'),
+        },
+        speedMul: {
+            value: treeParameters.boneSpeedMul,
+            min: 0.0,
+            max: 3.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneSpeedMul'),
+        },
+        noiseStrength: {
+            value: treeParameters.boneNoiseStrength,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneNoiseStrength'),
+        },
+        noiseScale: {
+            value: treeParameters.boneNoiseScale,
+            min: 0.0,
+            max: 3.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneNoiseScale'),
+        },
+        noiseSpeed: {
+            value: treeParameters.boneNoiseSpeed,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneNoiseSpeed'),
+        },
+        xFactor: {
+            value: treeParameters.boneXFactor,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneXFactor'),
+        },
+        zFactor: {
+            value: treeParameters.boneZFactor,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneZFactor'),
+        },
+        parentInfluence: {
+            value: treeParameters.boneParentInfluence,
+            min: 0.0,
+            max: 1.25,
+            step: 0.01,
+            onChange: setParam('treeParameters', 'boneParentInfluence'),
         },
     })
 

@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import * as THREE from 'three'
 
-const useStore = create(
-    subscribeWithSelector((set) => ({
+const createStore = () =>
+    create(
+        subscribeWithSelector((set) => ({
         trailTexture: null,
         setTrailTexture: (texture) => {
             set({ trailTexture: texture })
@@ -204,6 +205,8 @@ const useStore = create(
                     grassBase: '#396c18',
                     grassTop: '#77aa1a',
                     ball: '#582ec7',
+                    leaves: '#cb3e0b',
+                    bushFresnelColor: '#ffcc00',
                 },
                 light: {
                     terrain: '#908343',
@@ -211,6 +214,8 @@ const useStore = create(
                     grassBase: '#669019',
                     grassTop: '#acc125',
                     ball: '#c7442d',
+                    leaves: '#204a11',
+                    bushFresnelColor: '#84cd27',
                 },
             }
 
@@ -221,6 +226,7 @@ const useStore = create(
                 terrainParameters: { ...state.terrainParameters, color: colors.terrain, backgroundColor: colors.background },
                 grassParameters: { ...state.grassParameters, colorBase: colors.grassBase, colorTop: colors.grassTop },
                 ballParameters: { ...state.ballParameters, color: colors.ball },
+                treeParameters: { ...state.treeParameters, leavesColor: colors.leaves, bushFresnelColor: colors.bushFresnelColor },
             }))
         },
 
@@ -242,7 +248,12 @@ const useStore = create(
                 },
             }))
         },
-    }))
-)
+        }))
+    )
+
+const useStore = import.meta?.hot?.data?.store ?? createStore()
+if (import.meta?.hot) {
+    import.meta.hot.data.store = useStore
+}
 
 export default useStore

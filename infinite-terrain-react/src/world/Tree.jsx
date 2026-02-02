@@ -49,15 +49,20 @@ export function Tree(props) {
         // Init bone wind params
         if (nodes?.Bone) {
             nodes.Bone.traverse((object) => {
-                if (object.isBone && !object.userData.initialRotation) {
-                    object.userData.initialRotation = object.rotation.clone()
+                if (!object.isBone) return
 
+                if (!object.userData.initialRotation) {
+                    object.userData.initialRotation = object.rotation.clone()
+                }
+
+                const treeSeed = props.seed ?? 0
+                if (object.userData.windSeedSource !== treeSeed) {
                     const base = hashStringTo01(object.name || `${object.id}`)
-                    const treeSeed = props.seed ?? 0
                     const h = (base + treeSeed) % 1
                     object.userData.windPhase = h * Math.PI * 2
                     object.userData.windSeed = h * 100.0
                     object.userData.axisMix = 0.35 + h * 0.65
+                    object.userData.windSeedSource = treeSeed
                 }
             })
         }

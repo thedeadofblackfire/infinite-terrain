@@ -44,6 +44,7 @@ const useStore = create(
             grassFadeOffset: 3.5,
             groundOffset: -0.75,
             groundFadeOffset: 1.0,
+            borderTreesMultiplier: 0.9,
         },
         setBorderParameters: (parameters) => {
             set({ borderParameters: parameters })

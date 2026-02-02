@@ -5,6 +5,7 @@ uniform float uWorldNoiseScale;
 uniform float uUvWiggleScale;
 uniform sampler2D uNoiseTexture;
 uniform float uNoiseMix;
+varying vec3 vWorldPosition;
 
 float csm_noiseTex(vec2 p) {
   return texture2D(uNoiseTexture, p).r;
@@ -28,6 +29,7 @@ void main() {
   float wiggle = mix(wWorld, wUv, clamp(uNoiseMix, 0.0, 1.0));
 
   csm_Position = position + normal * wiggle * uWiggleStrength;
+  vWorldPosition = (modelMatrix * vec4(csm_Position, 1.0)).xyz;
 }
 
 

@@ -130,6 +130,13 @@ export default function Controls() {
             step: 0.01,
             onChange: setParam('borderParameters', 'groundFadeOffset'),
         },
+        treeBorderMul: {
+            value: borderParameters.borderTreesMultiplier,
+            min: 0.1,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('borderParameters', 'borderTreesMultiplier'),
+        },
     })
 
     /**

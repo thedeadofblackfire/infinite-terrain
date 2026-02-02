@@ -52,5 +52,5 @@ export function TreeLeaves({ nodes, rootRef, leavesMaterial }) {
 
     if (!bushGeometry || bushMeshes.length === 0) return null
 
-    return <instancedMesh args={[bushGeometry, leavesMaterial, bushMeshes.length]} frustumCulled={false} ref={instancedMeshRef} />
+    return <instancedMesh args={[bushGeometry, leavesMaterial, bushMeshes.length]} frustumCulled={false} ref={instancedMeshRef} dispose={null} />
 }

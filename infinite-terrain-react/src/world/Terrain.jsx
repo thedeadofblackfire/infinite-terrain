@@ -190,6 +190,16 @@ export default function Terrain() {
                 uFresnelPower: { value: treeParameters.bushFresnelPower },
                 uFresnelStrength: { value: treeParameters.bushFresnelStrength },
                 uFresnelColor: { value: new THREE.Color(treeParameters.bushFresnelColor) },
+
+                uCircleCenter: { value: new THREE.Vector3() },
+                uChunkSize: { value: chunkSize },
+                uNoiseStrength: { value: borderParameters.noiseStrength },
+                uNoiseScale: { value: borderParameters.noiseScale },
+                uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
+                uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
+                uBorderTreesMultiplier: { value: borderParameters.borderTreesMultiplier },
+                uPixelSize: { value: ditheringParameters.pixelSize },
+                uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
             },
             vertexShader: bushesVertexShader,
             fragmentShader: bushesFragmentShader,
@@ -203,7 +213,7 @@ export default function Terrain() {
             roughness: 1.0,
             metalness: 0.0,
         })
-    }, [alphaMap, noiseTexture, treeParameters])
+    }, [alphaMap, noiseTexture, treeParameters, chunkSize, borderParameters, ditheringParameters])
 
     // Tree trunk material - shared across all trees
     const trunkMaterial = useMemo(() => {
@@ -214,11 +224,21 @@ export default function Terrain() {
             uniforms: {
                 uTrunkColorA: { value: new THREE.Color(treeParameters.trunkColorA ?? '#ffffff') },
                 uTrunkColorB: { value: new THREE.Color(treeParameters.trunkColorB ?? '#000000') },
+                uCircleCenter: { value: new THREE.Vector3() },
+                uChunkSize: { value: chunkSize },
+                uNoiseTexture: { value: noiseTexture },
+                uNoiseStrength: { value: borderParameters.noiseStrength },
+                uNoiseScale: { value: borderParameters.noiseScale },
+                uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
+                uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
+                uBorderTreesMultiplier: { value: borderParameters.borderTreesMultiplier },
+                uPixelSize: { value: ditheringParameters.pixelSize },
+                uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
             },
             roughness: 1.0,
             metalness: 0.0,
         })
-    }, [treeParameters.trunkColorA, treeParameters.trunkColorB])
+    }, [treeParameters.trunkColorA, treeParameters.trunkColorB, chunkSize, noiseTexture, borderParameters, ditheringParameters])
 
     // Cleanup materials and shared assets on unmount
     useEffect(() => {
@@ -308,6 +328,12 @@ export default function Terrain() {
         // Update tree leaves material uniforms
         if (leavesMaterial?.uniforms?.uTime) {
             leavesMaterial.uniforms.uTime.value = clock.elapsedTime
+        }
+        if (leavesMaterial?.uniforms?.uCircleCenter) {
+            leavesMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+        }
+        if (trunkMaterial?.uniforms?.uCircleCenter) {
+            trunkMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
         }
 
         // Chunk management

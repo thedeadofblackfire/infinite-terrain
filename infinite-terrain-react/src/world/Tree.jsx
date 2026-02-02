@@ -38,7 +38,6 @@ export function Tree(props) {
     }, [clonedScene])
     const windParameters = useStore((state) => state.windParameters)
     const treeParameters = useStore((state) => state.treeParameters)
-    const outerRef = useRef(null)
     const innerRef = useRef(null)
     const windTmpRef = useRef({
         quat: new THREE.Quaternion(),
@@ -53,21 +52,27 @@ export function Tree(props) {
                 if (object.isBone && !object.userData.initialRotation) {
                     object.userData.initialRotation = object.rotation.clone()
 
-                    const h = hashStringTo01(object.name || `${object.id}`)
+                    const base = hashStringTo01(object.name || `${object.id}`)
+                    const treeSeed = props.seed ?? 0
+                    const h = (base + treeSeed) % 1
                     object.userData.windPhase = h * Math.PI * 2
                     object.userData.windSeed = h * 100.0
                     object.userData.axisMix = 0.35 + h * 0.65
                 }
             })
         }
-    }, [nodes])
+    }, [nodes, props.seed])
 
     useEffect(() => {
         return () => {
             if (!clonedScene) return
+            // Dispose per-tree skeletons (and their bone textures) on unmount
             clonedScene.traverse((obj) => {
-                if (obj.isSkinnedMesh) {
-                    obj.skeleton?.dispose()
+                if (obj.isSkinnedMesh && obj.skeleton) {
+                    if (obj.skeleton.boneTexture) {
+                        obj.skeleton.boneTexture.dispose()
+                    }
+                    obj.skeleton.dispose()
                 }
             })
         }
@@ -135,9 +140,9 @@ export function Tree(props) {
     if (!nodes?.Bone || !nodes?.trunk) return null
 
     return (
-        <group {...props} ref={outerRef} scale={1.5}>
+        <group {...props} scale={(props.scale ?? 1) * 1.5}>
             <group ref={innerRef} rotation-y={Math.PI / 2}>
-                <skinnedMesh geometry={nodes.trunk.geometry} material={props.trunkMaterial} skeleton={nodes.trunk.skeleton} />
+                <skinnedMesh geometry={nodes.trunk.geometry} material={props.trunkMaterial} skeleton={nodes.trunk.skeleton} dispose={null} />
                 <primitive object={nodes.Bone} />
                 <TreeLeaves nodes={nodes} rootRef={innerRef} leavesMaterial={props.leavesMaterial} />
             </group>

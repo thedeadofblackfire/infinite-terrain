@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-export function TreeLeaves({ nodes, rootRef, leavesMaterial }) {
+export function TreeLeaves({ nodes, rootRef, boneRoot, leavesMaterial }) {
     const instancedMeshRef = useRef(null)
     const tmpRef = useRef({
         invRoot: new THREE.Matrix4(),
@@ -31,11 +31,14 @@ export function TreeLeaves({ nodes, rootRef, leavesMaterial }) {
     useFrame(() => {
         // Update instanced bushes to follow the animated skeleton hierarchy
         const root = rootRef?.current
+        const bone = boneRoot ?? nodes?.Bone
         const inst = instancedMeshRef.current
         if (!root || !inst || bushMeshes.length === 0) return
 
         root.updateMatrixWorld(true)
-        nodes.Bone.updateMatrixWorld(true)
+        if (bone) {
+            bone.updateMatrixWorld(true)
+        }
 
         const { invRoot, local } = tmpRef.current
         invRoot.copy(root.matrixWorld).invert()

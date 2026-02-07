@@ -15,7 +15,7 @@ import { generateChunkData } from './utils/chunkUtils.js'
 
 import noiseTextureUrl from '/textures/noiseTexture.png'
 import alphaLeavesUrl from '../assets/textures/alpha_leaves.png'
-import treeUrl from '../assets/models/tree.glb'
+import treeUrl from '../assets/models/tree_physics.glb'
 
 import terrainVertexShader from '../shaders/terrain/vertex.glsl'
 import terrainFragmentShader from '../shaders/terrain/fragment.glsl'
@@ -276,6 +276,12 @@ export default function Terrain() {
         })
     }, [])
 
+    const rigidBodyMaterial = useMemo(() => {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+        mat.visible = false
+        return mat
+    }, [])
+
     useEffect(() => {
         const u = terrainMaterial.uniforms
         u.uBaseColor.value.set(terrainParameters.color)
@@ -487,11 +493,12 @@ export default function Terrain() {
             stoneGeometry.dispose()
             leavesMaterial.dispose()
             trunkMaterial.dispose()
+            rigidBodyMaterial.dispose()
             // Dispose shared textures when the entire terrain is gone
             noiseTexture.dispose()
             alphaMap.dispose()
         }
-    }, [terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry, leavesMaterial, trunkMaterial, noiseTexture, alphaMap])
+    }, [terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry, leavesMaterial, trunkMaterial, rigidBodyMaterial, noiseTexture, alphaMap])
 
     // Handle radius animation
     const handleRadiusAnimation = () => {
@@ -686,6 +693,7 @@ export default function Terrain() {
                         visible={visible}
                         leavesMaterial={leavesMaterial}
                         trunkMaterial={trunkMaterial}
+                        rigidBodyMaterial={rigidBodyMaterial}
                         treeScene={treeModel.scene}
                     />
                 )

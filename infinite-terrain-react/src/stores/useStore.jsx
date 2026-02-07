@@ -121,13 +121,13 @@ const createStore = () =>
             },
 
             windLineParameters: {
-                gridSpacing: 1.8,
+                gridSpacing: 3.0,
                 height: 1.5,
                 heightVariationRange: 2.0,
                 timeMultiplier: 0.04,
-                alphaMultiplier: 0.3,
+                alphaMultiplier: 1.0,
                 lengthMultiplier: 1.65,
-                width: 0.15,
+                width: 0.1,
             },
 
             /**

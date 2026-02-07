@@ -114,10 +114,20 @@ const createStore = () =>
              * Wind parameters (global)
              */
             windParameters: {
-                direction: 0.6, // radians, used for grass sway direction in XZ
+                direction: 0.8, // radians, used for grass sway direction in XZ
                 strength: 0.7,
                 speed: 1.0,
                 scale: 0.35,
+            },
+
+            windLineParameters: {
+                gridSpacing: 1.8,
+                height: 1.5,
+                heightVariationRange: 2.0,
+                timeMultiplier: 0.04,
+                alphaMultiplier: 0.3,
+                lengthMultiplier: 1.65,
+                width: 0.15,
             },
 
             /**

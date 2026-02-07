@@ -7,6 +7,7 @@ export default function Controls() {
     const ditheringParameters = useStore((state) => state.ditheringParameters)
     const grassParameters = useStore((state) => state.grassParameters)
     const windParameters = useStore((state) => state.windParameters)
+    const windLineParameters = useStore((state) => state.windLineParameters)
     const stoneParameters = useStore((state) => state.stoneParameters)
     const treeParameters = useStore((state) => state.treeParameters)
     const trailParameters = useStore((state) => state.trailParameters)
@@ -243,6 +244,61 @@ export default function Controls() {
             max: 1,
             step: 0.01,
             onChange: setParam('windParameters', 'scale'),
+        },
+    })
+
+    /**
+     * Wind line parameters
+     */
+    useControls('Wind Lines', {
+        gridSpacing: {
+            value: windLineParameters.gridSpacing,
+            min: 0.5,
+            max: 10,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'gridSpacing'),
+        },
+        height: {
+            value: windLineParameters.height,
+            min: -5,
+            max: 10,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'height'),
+        },
+        heightVariation: {
+            value: windLineParameters.heightVariationRange,
+            min: 0,
+            max: 5,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'heightVariationRange'),
+        },
+        timeMultiplier: {
+            value: windLineParameters.timeMultiplier,
+            min: 0,
+            max: 0.5,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'timeMultiplier'),
+        },
+        alphaMultiplier: {
+            value: windLineParameters.alphaMultiplier,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'alphaMultiplier'),
+        },
+        length: {
+            value: windLineParameters.lengthMultiplier,
+            min: 0.1,
+            max: 3,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'lengthMultiplier'),
+        },
+        width: {
+            value: windLineParameters.width,
+            min: 0.02,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'width'),
         },
     })
 

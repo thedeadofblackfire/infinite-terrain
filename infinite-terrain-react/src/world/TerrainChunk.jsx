@@ -4,6 +4,7 @@ import * as THREE from 'three'
 
 import Grass from './Grass.jsx'
 import Stones from './Stones.jsx'
+import WindChunk from './WindChunk.jsx'
 import useStore from '../stores/useStore.jsx'
 import { generateChunkData } from './utils/chunkUtils.js'
 
@@ -17,6 +18,10 @@ export default function TerrainChunk({
     grassMaterial,
     stoneMaterial,
     stoneGeometry,
+    windBaseGeometry,
+    windMaterial,
+    windLineParameters,
+    windDirection,
 }) {
     const terrainParameters = useStore((s) => s.terrainParameters)
     const stoneParameters = useStore((s) => s.stoneParameters)
@@ -72,6 +77,17 @@ export default function TerrainChunk({
 
             <Stones key={stonesKey} stones={stoneField.currentStones} maxCount={stoneField.capacity} stoneMaterial={stoneMaterial} stoneGeometry={stoneGeometry} />
 
+            <WindChunk
+                chunkX={x}
+                chunkZ={z}
+                size={size}
+                baseGeometry={windBaseGeometry}
+                windLineParameters={windLineParameters}
+                windDirection={windDirection}
+                terrainScale={terrainScale}
+                terrainAmplitude={terrainAmplitude}
+                material={windMaterial}
+            />
         </group>
     )
 }

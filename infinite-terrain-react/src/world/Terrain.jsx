@@ -7,7 +7,6 @@ import * as THREE from 'three'
 
 import TerrainChunk from './TerrainChunk.jsx'
 import Trees from './Trees.jsx'
-import Wind from './Wind.jsx'
 import useTerrainMaterial from './materials/TerrainMaterial.jsx'
 import useGrassMaterial from './materials/GrassMaterial.jsx'
 import useStonesMaterial from './materials/StonesMaterial.jsx'
@@ -15,6 +14,9 @@ import useLeavesMaterial from './materials/LeavesMaterial.jsx'
 import useTrunkMaterial from './materials/TrunkMaterial.jsx'
 import useStore from '../stores/useStore.jsx'
 import usePhases, { PHASES } from '../stores/usePhases.jsx'
+
+import windLineVertexShader from '../shaders/windLine/vertex.glsl'
+import windLineFragmentShader from '../shaders/windLine/fragment.glsl'
 
 import noiseTextureUrl from '/textures/noiseTexture.png'
 import alphaLeavesUrl from '../assets/textures/alpha_leaves.png'
@@ -36,6 +38,13 @@ export default function Terrain() {
     const terrainScale = useStore((s) => s.terrainParameters.scale)
     const terrainAmplitude = useStore((s) => s.terrainParameters.amplitude)
     const borderCircleRadius = useStore((s) => s.borderParameters.circleRadiusFactor)
+    const borderParameters = useStore((s) => s.borderParameters)
+    const ditheringParameters = useStore((s) => s.ditheringParameters)
+    const windParameters = useStore((s) => s.windParameters)
+    const windLineParameters = useStore((s) => s.windLineParameters)
+    const windLineWidth = windLineParameters.width
+    const windDirection = windParameters.direction
+    const ditherModeValue = ditheringParameters.ditherMode === 'Bayer' ? 1 : 0
     const stoneParameters = useStore((s) => s.stoneParameters)
 
     const noise2D = sharedNoise2D
@@ -90,6 +99,88 @@ export default function Terrain() {
         noiseTexture,
     })
 
+    const windBaseGeometry = useMemo(() => {
+        const geometry = new THREE.PlaneGeometry(10, windLineWidth, 20, 1)
+        return geometry
+    }, [windLineWidth])
+
+    useEffect(() => {
+        return () => {
+            windBaseGeometry.dispose()
+        }
+    }, [windBaseGeometry])
+
+    const windMaterial = useMemo(() => {
+        return new THREE.ShaderMaterial({
+            vertexShader: windLineVertexShader,
+            fragmentShader: windLineFragmentShader,
+            uniforms: {
+                uTime: { value: 0 },
+                uTimeMultiplier: { value: 0.1 },
+                uAlphaMultiplier: { value: 0.5 },
+                uStrength: { value: 1.0 },
+                uSpeed: { value: 1.0 },
+                uLengthMultiplier: { value: 1.0 },
+                uRange: { value: 4.0 },
+                uCircleCenter: { value: new THREE.Vector3() },
+                uTrailPatchSize: { value: chunkSize },
+                uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
+                uGroundOffset: { value: borderParameters.groundOffset },
+                uGroundFadeOffset: { value: borderParameters.groundFadeOffset },
+                uNoiseTexture: { value: noiseTexture },
+                uNoiseStrength: { value: borderParameters.noiseStrength },
+                uNoiseScale: { value: borderParameters.noiseScale },
+                uPixelSize: { value: ditheringParameters.pixelSize },
+                uDitherMode: { value: ditherModeValue },
+            },
+            transparent: true,
+            blending: THREE.NormalBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        })
+    }, [
+        borderParameters.groundFadeOffset,
+        borderParameters.groundOffset,
+        borderParameters.noiseScale,
+        borderParameters.noiseStrength,
+        chunkSize,
+        ditherModeValue,
+        ditheringParameters.pixelSize,
+        noiseTexture,
+    ])
+
+    useEffect(() => {
+        const u = windMaterial.uniforms
+        u.uTrailPatchSize.value = chunkSize
+        u.uGroundOffset.value = borderParameters.groundOffset
+        u.uGroundFadeOffset.value = borderParameters.groundFadeOffset
+        u.uNoiseTexture.value = noiseTexture
+        u.uNoiseStrength.value = borderParameters.noiseStrength
+        u.uNoiseScale.value = borderParameters.noiseScale
+        u.uTimeMultiplier.value = windLineParameters.timeMultiplier
+        u.uAlphaMultiplier.value = windLineParameters.alphaMultiplier
+        u.uLengthMultiplier.value = windLineParameters.lengthMultiplier
+        u.uStrength.value = windParameters.strength
+        u.uSpeed.value = windParameters.speed
+        u.uPixelSize.value = ditheringParameters.pixelSize
+        u.uDitherMode.value = ditherModeValue
+    }, [
+        windMaterial,
+        chunkSize,
+        borderParameters.groundOffset,
+        borderParameters.groundFadeOffset,
+        noiseTexture,
+        borderParameters.noiseStrength,
+        borderParameters.noiseScale,
+        windLineParameters.timeMultiplier,
+        windLineParameters.alphaMultiplier,
+        windLineParameters.lengthMultiplier,
+        windParameters.strength,
+        windParameters.speed,
+        ditheringParameters.pixelSize,
+        ditherModeValue,
+    ])
+
     const rigidBodyMaterial = useMemo(() => {
         const mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
         mat.visible = false
@@ -103,6 +194,7 @@ export default function Terrain() {
         stoneMaterial.uniforms.uCircleRadiusFactor.value = value
         leavesMaterial.uniforms.uCircleRadiusFactor.value = value
         trunkMaterial.uniforms.uCircleRadiusFactor.value = value
+        windMaterial.uniforms.uCircleRadiusFactor.value = value
     }
 
     useEffect(() => {
@@ -177,6 +269,10 @@ export default function Terrain() {
         trunkMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
         trunkMaterial.uniforms.uBallPosition.value.copy(state.ballPosition)
 
+        // Update wind uniforms
+        windMaterial.uniforms.uTime.value = clock.elapsedTime
+        windMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+
         // Chunk management
         const ballPosition = state.ballPosition
         const safeChunkSize = Math.max(0.0001, chunkSize)
@@ -214,6 +310,10 @@ export default function Terrain() {
                     grassMaterial={grassMaterial}
                     stoneMaterial={stoneMaterial}
                     stoneGeometry={stoneGeometry}
+                    windBaseGeometry={windBaseGeometry}
+                    windMaterial={windMaterial}
+                    windLineParameters={windLineParameters}
+                    windDirection={windDirection}
                 />
             ))}
             <Trees
@@ -227,7 +327,6 @@ export default function Terrain() {
                 trunkMaterial={trunkMaterial}
                 rigidBodyMaterial={rigidBodyMaterial}
             />
-            <Wind initialCircleRadius={START_CIRCLE_RADIUS} circleRadiusRef={circleRadiusRef} />
         </group>
     )
 }

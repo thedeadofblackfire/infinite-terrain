@@ -14,7 +14,7 @@ const TIME_OF_IMPACT_THRESHOLD = 0.15
 const CAMERA_POSITION_OFFSET = new THREE.Vector3(0, 10, 12)
 const CAMERA_TARGET_OFFSET = new THREE.Vector3(0, 0.25, 0)
 const CAMERA_LERP_SPEED = 5.0
-const BALL_INITIAL_POSITION = new THREE.Vector3(0, 4, 0)
+const BALL_INITIAL_POSITION = new THREE.Vector3(0, 6, 0)
 const BALL_RESET_Y = -4.0
 const PHYSICS_PARAMS = { jumpForce: 2.0, impulseStrength: 1.8, torqueStrength: 0.5 }
 
@@ -24,6 +24,7 @@ export default function Ball() {
     const setLandBallDistance = useStore((state) => state.setLandBallDistance)
     const setSmoothedCircleCenter = useStore((state) => state.setSmoothedCircleCenter)
     const phase = usePhases((state) => state.phase)
+    const setPhase = usePhases((state) => state.setPhase)
 
     const [smoothedCameraPosition] = useState(() => new THREE.Vector3(0, 14, 12))
     const [smoothedCameraTarget] = useState(() => new THREE.Vector3(0, 0.25, 0))
@@ -113,6 +114,7 @@ export default function Ball() {
     }
 
     const jump = () => {
+        if (usePhases.getState().phase !== PHASES.start) return
         const hit = castDownRay()
         if (hit && hit.timeOfImpact < TIME_OF_IMPACT_THRESHOLD) {
             bodyRef.current.applyImpulse({ x: 0, y: PHYSICS_PARAMS.jumpForce, z: 0 })
@@ -130,7 +132,15 @@ export default function Ball() {
         const unsubscribeReset = subscribeKeys(
             (state) => state.reset,
             (value) => {
-                if (value) handleReset()
+                if (!value) return
+                const currentPhase = usePhases.getState().phase
+                if (currentPhase === PHASES.warmup) {
+                    setPhase(PHASES.start)
+                    return
+                }
+                if (currentPhase === PHASES.start) {
+                    handleReset()
+                }
             }
         )
 
@@ -154,48 +164,53 @@ export default function Ball() {
         }
     }, [])
 
-    // Listen for game start trigger from Loader
     useEffect(() => {
-        if (phase === PHASES.start) {
-            handleReset()
+        if (!bodyRef.current) return
+        if (phase !== PHASES.start) {
+            resetPosition()
+            return
         }
+        bodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
+        bodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
     }, [phase])
 
     useFrame((state, delta) => {
         const safeDelta = Math.min(delta, 0.1)
 
-        // Controls
-        const { forward, backward, leftward, rightward } = getKeys()
-        const storeControls = useStore.getState().controls
+        if (phase === PHASES.start) {
+            // Controls
+            const { forward, backward, leftward, rightward } = getKeys()
+            const storeControls = useStore.getState().controls
 
-        const impulse = { x: 0, y: 0, z: 0 }
-        const torque = { x: 0, y: 0, z: 0 }
+            const impulse = { x: 0, y: 0, z: 0 }
+            const torque = { x: 0, y: 0, z: 0 }
 
-        const impulseStrength = PHYSICS_PARAMS.impulseStrength * safeDelta
-        const torqueStrength = PHYSICS_PARAMS.torqueStrength * safeDelta
+            const impulseStrength = PHYSICS_PARAMS.impulseStrength * safeDelta
+            const torqueStrength = PHYSICS_PARAMS.torqueStrength * safeDelta
 
-        if (forward || storeControls.forward) {
-            impulse.z -= impulseStrength
-            torque.x -= torqueStrength
+            if (forward || storeControls.forward) {
+                impulse.z -= impulseStrength
+                torque.x -= torqueStrength
+            }
+
+            if (rightward || storeControls.rightward) {
+                impulse.x += impulseStrength
+                torque.z -= torqueStrength
+            }
+
+            if (backward || storeControls.backward) {
+                impulse.z += impulseStrength
+                torque.x += torqueStrength
+            }
+
+            if (leftward || storeControls.leftward) {
+                impulse.x -= impulseStrength
+                torque.z += torqueStrength
+            }
+
+            bodyRef.current.applyImpulse(impulse)
+            bodyRef.current.applyTorqueImpulse(torque)
         }
-
-        if (rightward || storeControls.rightward) {
-            impulse.x += impulseStrength
-            torque.z -= torqueStrength
-        }
-
-        if (backward || storeControls.backward) {
-            impulse.z += impulseStrength
-            torque.x += torqueStrength
-        }
-
-        if (leftward || storeControls.leftward) {
-            impulse.x -= impulseStrength
-            torque.z += torqueStrength
-        }
-
-        bodyRef.current.applyImpulse(impulse)
-        bodyRef.current.applyTorqueImpulse(torque)
 
         const bodyPosition = bodyRef.current.translation()
         setBallPosition(bodyPosition)
@@ -240,7 +255,8 @@ export default function Ball() {
             friction={1}
             linearDamping={0.5}
             angularDamping={0.5}
-            position={[0, 2, 0]}
+            type={phase === PHASES.start ? 'dynamic' : 'fixed'}
+            position={[0, 4, 0]}
             userData={{ name: 'ball' }}
         >
             <mesh ref={meshRef} geometry={geometry} material={material} />

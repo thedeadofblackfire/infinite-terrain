@@ -11,7 +11,7 @@ import { generateWindLineInstances } from './utils/windUtils.js'
 import { sharedNoise2D } from './utils/worldNoise.js'
 import noiseTextureUrl from '/textures/noiseTexture.png'
 
-export default function Wind() {
+export default function Wind({ initialCircleRadius = 0.1, circleRadiusRef }) {
     const [activeChunks, setActiveChunks] = useState([])
     const currentChunk = useRef({ x: 0, z: 0, size: 0 })
 
@@ -28,7 +28,6 @@ export default function Wind() {
     const windChunkSize = chunkSize
     const borderNoiseStrength = borderParameters.noiseStrength
     const borderNoiseScale = borderParameters.noiseScale
-    const borderCircleRadius = borderParameters.circleRadiusFactor
     const borderGroundOffset = borderParameters.groundOffset
     const borderGroundFadeOffset = borderParameters.groundFadeOffset
     const ditherModeValue = ditheringParameters.ditherMode === 'Bayer' ? 1 : 0
@@ -66,7 +65,7 @@ export default function Wind() {
                 uLengthMultiplier: { value: 1.0 },
                 uCircleCenter: { value: new THREE.Vector3() },
                 uTrailPatchSize: { value: chunkSize },
-                uCircleRadiusFactor: { value: borderCircleRadius },
+                uCircleRadiusFactor: { value: initialCircleRadius },
                 uGroundOffset: { value: borderGroundOffset },
                 uGroundFadeOffset: { value: borderGroundFadeOffset },
                 uNoiseTexture: { value: noiseTexture },
@@ -80,12 +79,11 @@ export default function Wind() {
             depthWrite: false,
             side: THREE.DoubleSide,
         })
-    }, [])
+    }, [borderGroundOffset, borderGroundFadeOffset, borderNoiseScale, borderNoiseStrength, chunkSize, ditherModeValue, initialCircleRadius, noiseTexture])
 
     useEffect(() => {
         const u = material.uniforms
         u.uTrailPatchSize.value = chunkSize
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGroundOffset.value = borderGroundOffset
         u.uGroundFadeOffset.value = borderGroundFadeOffset
         u.uNoiseTexture.value = noiseTexture
@@ -101,7 +99,6 @@ export default function Wind() {
     }, [
         material,
         chunkSize,
-        borderCircleRadius,
         borderGroundOffset,
         borderGroundFadeOffset,
         noiseTexture,
@@ -115,6 +112,7 @@ export default function Wind() {
         ditheringParameters.pixelSize,
         ditherModeValue,
     ])
+
 
     useFrame(() => {
         const state = useStore.getState()
@@ -237,6 +235,9 @@ export default function Wind() {
         const state = useStore.getState()
         material.uniforms.uTime.value = clock.elapsedTime
         material.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+        if (circleRadiusRef?.current !== undefined) {
+            material.uniforms.uCircleRadiusFactor.value = circleRadiusRef.current
+        }
     })
 
     return <mesh geometry={mergedGeometry} material={material} frustumCulled={false} dispose={null} />

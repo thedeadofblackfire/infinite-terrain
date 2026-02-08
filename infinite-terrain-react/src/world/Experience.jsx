@@ -8,7 +8,6 @@ import BallTrailCanvas from './BallTrailCanvas.jsx'
 import Controls from './Controls.jsx'
 import BackgroundSphere from './BackgroundSphere.jsx'
 import useStore from '../stores/useStore.jsx'
-import Wind from './Wind.jsx'
 
 export default function Experience() {
     const perfVisible = useStore((state) => state.perfVisible)
@@ -26,8 +25,6 @@ export default function Experience() {
                 <Terrain />
                 <Ball />
             </Physics>
-
-            <Wind />
 
             <BallTrailCanvas />
             <Controls />

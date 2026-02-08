@@ -3,7 +3,7 @@ import { mulberry32 } from './randomUtils.js'
 const DEFAULT_WIND_GRID_SPACING = 3.0
 const DEFAULT_WIND_HEIGHT = 1.0
 const DEFAULT_WIND_HEIGHT_VARIATION_RANGE = 1.0
-const WIND_TIME_OFFSET_MAX = 50
+const WIND_TIME_OFFSET_MAX = 100
 
 export function generateWindLineInstances(x, z, size, options = {}) {
     const seed = ((x * 73856093) ^ (z * 19349663) ^ 0x9e3779b9) >>> 0

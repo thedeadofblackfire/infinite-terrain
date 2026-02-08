@@ -8,13 +8,14 @@ import * as THREE from 'three'
 
 import TerrainChunk from './TerrainChunk.jsx'
 import { Tree } from './Tree.jsx'
+import Wind from './Wind.jsx'
 import useStore from '../stores/useStore.jsx'
 import usePhases, { PHASES } from '../stores/usePhases.jsx'
 import { generateChunkData } from './utils/chunkUtils.js'
 
 import noiseTextureUrl from '/textures/noiseTexture.png'
 import alphaLeavesUrl from '../assets/textures/alpha_leaves.png'
-import treeUrl from '../assets/models/tree_physics.glb'
+import treeUrl from '../assets/models/tree.glb'
 
 import terrainVertexShader from '../shaders/terrain/vertex.glsl'
 import terrainFragmentShader from '../shaders/terrain/fragment.glsl'
@@ -28,6 +29,8 @@ import trunkVertexShader from '../shaders/trunk/vertex.glsl'
 import trunkFragmentShader from '../shaders/trunk/fragment.glsl'
 
 const TREE_POOL_SIZE = 18
+const START_CIRCLE_RADIUS = 0.07
+const START_RADIUS_DELAY = 1.1
 
 export default function Terrain() {
     const [activeChunks, setActiveChunks] = useState([])
@@ -35,6 +38,7 @@ export default function Terrain() {
     const currentChunk = useRef({ x: 0, z: 0 })
     const radiusAnimationRef = useRef(null)
     const prevPhaseRef = useRef(PHASES.loading)
+    const circleRadiusRef = useRef(START_CIRCLE_RADIUS)
 
     const phase = usePhases((s) => s.phase)
 
@@ -48,7 +52,6 @@ export default function Terrain() {
     const trailParameters = useStore((s) => s.trailParameters)
     const ballFadeParameters = useStore((s) => s.ballFadeParameters)
     const ditheringParameters = useStore((s) => s.ditheringParameters)
-    const setBorderParameters = useStore((s) => s.setBorderParameters)
     const terrainScale = terrainParameters.scale
     const terrainAmplitude = terrainParameters.amplitude
     const borderNoiseStrength = borderParameters.noiseStrength
@@ -96,7 +99,7 @@ export default function Terrain() {
                 uBaseColor: { value: new THREE.Color(terrainParameters.color) },
                 uCircleCenter: { value: new THREE.Vector3() },
                 uTrailPatchSize: { value: chunkSize },
-                uCircleRadiusFactor: { value: borderCircleRadius },
+                uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
                 uGrassFadeOffset: { value: borderGrassFadeOffset },
                 uGroundOffset: { value: borderGroundOffset },
                 uGroundFadeOffset: { value: borderGroundFadeOffset },
@@ -153,7 +156,7 @@ export default function Terrain() {
                     uNoiseTexture: { value: noiseTexture },
                     uNoiseStrength: { value: borderNoiseStrength },
                     uNoiseScale: { value: borderNoiseScale },
-                    uCircleRadiusFactor: { value: borderCircleRadius },
+                    uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
                     uGrassFadeOffset: { value: borderGrassFadeOffset },
                     uGroundOffset: { value: borderGroundOffset },
                     uGroundFadeOffset: { value: borderGroundFadeOffset },
@@ -180,7 +183,7 @@ export default function Terrain() {
                 uNoiseTexture: { value: noiseTexture },
                 uNoiseStrength: { value: borderNoiseStrength },
                 uNoiseScale: { value: borderNoiseScale },
-                uCircleRadiusFactor: { value: borderCircleRadius },
+                uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
                 uGrassFadeOffset: { value: borderGrassFadeOffset },
             },
             vertexShader: stonesVertexShader,
@@ -216,7 +219,7 @@ export default function Terrain() {
                 uChunkSize: { value: chunkSize },
                 uNoiseStrength: { value: borderNoiseStrength },
                 uNoiseScale: { value: borderNoiseScale },
-                uCircleRadiusFactor: { value: borderCircleRadius },
+                uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
                 uGrassFadeOffset: { value: borderGrassFadeOffset },
                 uBorderTreesMultiplier: { value: borderTreesMultiplier },
                 uBallPosition: { value: new THREE.Vector3() },
@@ -256,7 +259,7 @@ export default function Terrain() {
                 uNoiseTexture: { value: noiseTexture },
                 uNoiseStrength: { value: borderNoiseStrength },
                 uNoiseScale: { value: borderNoiseScale },
-                uCircleRadiusFactor: { value: borderCircleRadius },
+                uCircleRadiusFactor: { value: START_CIRCLE_RADIUS },
                 uGrassFadeOffset: { value: borderGrassFadeOffset },
                 uBorderTreesMultiplier: { value: borderTreesMultiplier },
                 uBallPosition: { value: new THREE.Vector3() },
@@ -279,11 +282,27 @@ export default function Terrain() {
         return mat
     }, [])
 
+    const applyCircleRadius = (value) => {
+        terrainMaterial.uniforms.uCircleRadiusFactor.value = value
+        grassMaterial.uniforms.uCircleRadiusFactor.value = value
+        stoneMaterial.uniforms.uCircleRadiusFactor.value = value
+        if (leavesMaterial?.uniforms?.uCircleRadiusFactor) {
+            leavesMaterial.uniforms.uCircleRadiusFactor.value = value
+        }
+        if (trunkMaterial?.uniforms?.uCircleRadiusFactor) {
+            trunkMaterial.uniforms.uCircleRadiusFactor.value = value
+        }
+    }
+
+    const setCircleRadius = (value) => {
+        circleRadiusRef.current = value
+        applyCircleRadius(value)
+    }
+
     useEffect(() => {
         const u = terrainMaterial.uniforms
         u.uBaseColor.value.set(terrainParameters.color)
         u.uTrailPatchSize.value = chunkSize
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGrassFadeOffset.value = borderGrassFadeOffset
         u.uGroundOffset.value = borderGroundOffset
         u.uGroundFadeOffset.value = borderGroundFadeOffset
@@ -296,7 +315,6 @@ export default function Terrain() {
         terrainMaterial,
         terrainParameters.color,
         chunkSize,
-        borderCircleRadius,
         borderGrassFadeOffset,
         borderGroundOffset,
         borderGroundFadeOffset,
@@ -341,7 +359,6 @@ export default function Terrain() {
         u.uNoiseTexture.value = noiseTexture
         u.uNoiseStrength.value = borderNoiseStrength
         u.uNoiseScale.value = borderNoiseScale
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGrassFadeOffset.value = borderGrassFadeOffset
         u.uGroundOffset.value = borderGroundOffset
         u.uGroundFadeOffset.value = borderGroundFadeOffset
@@ -354,7 +371,6 @@ export default function Terrain() {
         noiseTexture,
         borderNoiseStrength,
         borderNoiseScale,
-        borderCircleRadius,
         borderGrassFadeOffset,
         borderGroundOffset,
         borderGroundFadeOffset,
@@ -371,7 +387,6 @@ export default function Terrain() {
         u.uNoiseTexture.value = noiseTexture
         u.uNoiseStrength.value = borderNoiseStrength
         u.uNoiseScale.value = borderNoiseScale
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGrassFadeOffset.value = borderGrassFadeOffset
     }, [
         stoneMaterial,
@@ -380,7 +395,6 @@ export default function Terrain() {
         noiseTexture,
         borderNoiseStrength,
         borderNoiseScale,
-        borderCircleRadius,
         borderGrassFadeOffset,
         ditheringParameters.pixelSize,
         ditherModeValue,
@@ -402,7 +416,6 @@ export default function Terrain() {
         u.uChunkSize.value = chunkSize
         u.uNoiseStrength.value = borderNoiseStrength
         u.uNoiseScale.value = borderNoiseScale
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGrassFadeOffset.value = borderGrassFadeOffset
         u.uBorderTreesMultiplier.value = borderTreesMultiplier
         u.uBallFadeRadius.value = ballFadeRadius
@@ -431,7 +444,6 @@ export default function Terrain() {
         alphaMap,
         borderNoiseStrength,
         borderNoiseScale,
-        borderCircleRadius,
         borderGrassFadeOffset,
         borderTreesMultiplier,
         ballFadeRadius,
@@ -451,7 +463,6 @@ export default function Terrain() {
         u.uNoiseTexture.value = noiseTexture
         u.uNoiseStrength.value = borderNoiseStrength
         u.uNoiseScale.value = borderNoiseScale
-        u.uCircleRadiusFactor.value = borderCircleRadius
         u.uGrassFadeOffset.value = borderGrassFadeOffset
         u.uBorderTreesMultiplier.value = borderTreesMultiplier
         u.uBallFadeRadius.value = ballFadeRadius
@@ -469,7 +480,6 @@ export default function Terrain() {
         noiseTexture,
         borderNoiseStrength,
         borderNoiseScale,
-        borderCircleRadius,
         borderGrassFadeOffset,
         borderTreesMultiplier,
         ballFadeRadius,
@@ -497,10 +507,23 @@ export default function Terrain() {
         }
     }, [terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry, leavesMaterial, trunkMaterial, rigidBodyMaterial, noiseTexture, alphaMap])
 
+    useEffect(() => {
+        if (phase === PHASES.start) return
+        if (radiusAnimationRef.current) return
+        setCircleRadius(START_CIRCLE_RADIUS)
+    }, [phase])
+
+    useEffect(() => {
+        if (phase !== PHASES.start) return
+        if (radiusAnimationRef.current) return
+        if (prevPhaseRef.current !== PHASES.start) return
+        setCircleRadius(borderCircleRadius)
+    }, [phase, borderCircleRadius])
+
     // Handle radius animation
     const handleRadiusAnimation = () => {
-        const targetRadius = borderParameters.circleRadiusFactor
-        const startRadius = 0.2
+        const targetRadius = borderCircleRadius
+        const startRadius = START_CIRCLE_RADIUS
 
         // Kill previous animation if it exists
         if (radiusAnimationRef.current) {
@@ -508,10 +531,8 @@ export default function Terrain() {
             radiusAnimationRef.current = null
         }
 
-        // Set initial radius to 0.2
-        terrainMaterial.uniforms.uCircleRadiusFactor.value = startRadius
-        grassMaterial.uniforms.uCircleRadiusFactor.value = startRadius
-        stoneMaterial.uniforms.uCircleRadiusFactor.value = startRadius
+        // Set initial radius
+        setCircleRadius(startRadius)
 
         // Create animation object for GSAP to animate
         const radiusObj = { value: startRadius }
@@ -519,13 +540,11 @@ export default function Terrain() {
         // Animate radius from 0.2 to target value
         radiusAnimationRef.current = gsap.to(radiusObj, {
             value: targetRadius,
-            duration: 1.2,
+            duration: 2.0,
+            delay: START_RADIUS_DELAY,
             ease: 'power2.out',
             onUpdate: () => {
-                // Update both materials' circle radius factor
-                terrainMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
-                grassMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
-                stoneMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
+                setCircleRadius(radiusObj.value)
             },
             onComplete: () => {
                 radiusAnimationRef.current = null
@@ -535,13 +554,11 @@ export default function Terrain() {
 
     // Listen for game start trigger from Loader
     useEffect(() => {
-        // Only trigger when it changes from false to true
         if (phase === PHASES.start && prevPhaseRef.current !== PHASES.start) {
             handleRadiusAnimation()
         }
-        // Update the ref to track the current value
         prevPhaseRef.current = phase
-    }, [phase, borderParameters, terrainMaterial, grassMaterial, setBorderParameters])
+    }, [phase, borderCircleRadius])
 
     // Cleanup animations on unmount
     useEffect(() => {
@@ -695,6 +712,7 @@ export default function Terrain() {
                     />
                 )
             })}
+            <Wind initialCircleRadius={START_CIRCLE_RADIUS} circleRadiusRef={circleRadiusRef} />
         </group>
     )
 }

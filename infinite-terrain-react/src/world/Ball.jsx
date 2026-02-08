@@ -57,7 +57,6 @@ export default function Ball() {
     }, [ballColor, material])
 
     const castDownRay = () => {
-        // Optimization: Initialize ray only once
         if (!downRayRef.current) {
             downRayRef.current = new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
         }

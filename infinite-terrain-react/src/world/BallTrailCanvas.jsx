@@ -62,7 +62,7 @@ export default function BallTrailCanvas() {
             ctxRef.current = null
             glowImageRef.current = null
         }
-    }, [trailParameters.chunkSize]) // Only recreate if size changes
+    }, [trailParameters.chunkSize])
 
     // 2. Update existing canvas visibility without recreating
     useEffect(() => {

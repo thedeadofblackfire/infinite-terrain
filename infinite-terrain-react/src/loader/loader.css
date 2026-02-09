@@ -1,7 +1,7 @@
 .loader-wrapper {
     position: fixed;
     inset: 0;
-    background: #203a3b;
+    background: #9a9065;
     z-index: 10000;
     display: grid;
     place-items: center;
@@ -26,7 +26,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #203a3b;
+    background: #9a9065;
 }
 
 .loader-center {
@@ -76,7 +76,7 @@
 }
 
 .loader-go-button--hovered {
-    color: #203a3b;
+    color: #9a9065;
     transition: color 0s;
 }
 

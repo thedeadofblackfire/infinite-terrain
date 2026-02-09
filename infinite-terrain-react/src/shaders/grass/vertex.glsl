@@ -26,6 +26,7 @@ uniform vec3 uFlowerColorD;
 uniform float uWindScale;
 uniform float uWindStrength;
 uniform float uWindSpeed;
+uniform float uWindDirection;
 
 // Trail parameters
 uniform sampler2D uTrailTexture;
@@ -228,8 +229,7 @@ void main() {
   vec2 windUV = (grassBladeWorldPos.xz * uWindScale * 0.1) + vec2(uTime * uWindSpeed * 0.1);
   float windStrength = texture2D(uNoiseTexture, windUV).r * 2.0 - 1.0;
   
-  float windAngle = 0.6;
-  vec3 windAxis = vec3(cos(windAngle), 0.0, sin(windAngle));
+  vec3 windAxis = vec3(cos(uWindDirection), 0.0, sin(uWindDirection));
   float windLeanAngle = windStrength * uWindStrength * heightPercent;
   
   // Secondary high-frequency noise for random animation

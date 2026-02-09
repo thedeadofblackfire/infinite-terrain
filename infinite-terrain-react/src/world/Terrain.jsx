@@ -1,25 +1,25 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
-import { createNoise2D } from 'simplex-noise'
-import * as THREE from 'three'
+import { sharedNoise2D } from './utils/worldNoise.js'
 import { gsap } from 'gsap'
+import * as THREE from 'three'
 
 import TerrainChunk from './TerrainChunk.jsx'
+import Trees from './Trees.jsx'
+import useTerrainMaterial from '../materials/TerrainMaterial.jsx'
+import useGrassMaterial from '../materials/GrassMaterial.jsx'
+import useStonesMaterial from '../materials/StonesMaterial.jsx'
+import useTreeMaterial from '../materials/TreeMaterial.jsx'
+import useWindMaterial from '../materials/WindMaterial.jsx'
 import useStore from '../stores/useStore.jsx'
 import usePhases, { PHASES } from '../stores/usePhases.jsx'
-import { mulberry32 } from './utils/randomUtils.js'
 
-import noiseTextureURL from '/textures/noiseTexture.png'
-import terrainVertexShader from '../shaders/terrain/vertex.glsl'
-import terrainFragmentShader from '../shaders/terrain/fragment.glsl'
-import grassVertexShader from '../shaders/grass/vertex.glsl'
-import grassFragmentShader from '../shaders/grass/fragment.glsl'
-import stonesVertexShader from '../shaders/stones/vertex.glsl'
-import stonesFragmentShader from '../shaders/stones/fragment.glsl'
+import noiseTextureUrl from '../assets/textures/noiseTexture.png'
+import alphaLeavesUrl from '../assets/textures/alpha_leaves.png'
 
-const WORLD_NOISE_SEED = 1337
-const sharedNoise2D = createNoise2D(mulberry32(WORLD_NOISE_SEED))
+const START_CIRCLE_RADIUS = 0.07
+const START_RADIUS_DELAY = 1.1
 
 export default function Terrain() {
     const [activeChunks, setActiveChunks] = useState([])
@@ -27,23 +27,27 @@ export default function Terrain() {
     const currentChunk = useRef({ x: 0, z: 0 })
     const radiusAnimationRef = useRef(null)
     const prevPhaseRef = useRef(PHASES.loading)
+    const circleRadiusRef = useRef(START_CIRCLE_RADIUS)
 
-    const chunkSize = useStore((s) => s.terrainParameters.chunkSize)
-    const terrainParameters = useStore((s) => s.terrainParameters)
-    const borderParameters = useStore((s) => s.borderParameters)
-    const grassParameters = useStore((s) => s.grassParameters)
-    const stoneParameters = useStore((s) => s.stoneParameters)
-    const trailParameters = useStore((s) => s.trailParameters)
-    const ditheringParameters = useStore((s) => s.ditheringParameters)
-    const setBorderParameters = useStore((s) => s.setBorderParameters)
     const phase = usePhases((s) => s.phase)
 
-    // Noise generator (stable across parameter changes and remounts)
+    const chunkSize = useStore((s) => s.terrainParameters.chunkSize)
+    const terrainScale = useStore((s) => s.terrainParameters.scale)
+    const terrainAmplitude = useStore((s) => s.terrainParameters.amplitude)
+    const borderCircleRadius = useStore((s) => s.borderParameters.circleRadiusFactor)
+    const windParameters = useStore((s) => s.windParameters)
+    const windLineParameters = useStore((s) => s.windLineParameters)
+    const windLineWidth = windLineParameters.width
+    const windDirection = windParameters.direction
+    const stoneParameters = useStore((s) => s.stoneParameters)
+    const treesEnabled = useStore((s) => s.generalParameters.trees)
+    const windEnabled = useStore((s) => s.generalParameters.wind)
+
     const noise2D = sharedNoise2D
 
-    // Noise texture
+    // Textures
     const noiseTexture = useTexture(
-        noiseTextureURL,
+        noiseTextureUrl,
         (texture) => {
             texture.wrapS = THREE.RepeatWrapping
             texture.wrapT = THREE.RepeatWrapping
@@ -51,179 +55,124 @@ export default function Terrain() {
             texture.magFilter = THREE.LinearFilter
             return texture
         },
-        [noiseTextureURL]
+        [noiseTextureUrl]
     )
+    const alphaMap = useTexture(alphaLeavesUrl)
 
-    // Terrain material - shared across all chunks
-    const terrainMaterial = useMemo(() => {
-        return new THREE.ShaderMaterial({
-            uniforms: {
-                uBaseColor: { value: new THREE.Color(terrainParameters.color) },
-                uCircleCenter: { value: new THREE.Vector3() },
-                uTrailPatchSize: { value: chunkSize },
-                uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
-                uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
-                uGroundOffset: { value: borderParameters.groundOffset },
-                uGroundFadeOffset: { value: borderParameters.groundFadeOffset },
-                uNoiseTexture: { value: noiseTexture },
-                uNoiseStrength: { value: borderParameters.noiseStrength },
-                uNoiseScale: { value: borderParameters.noiseScale },
-                uPixelSize: { value: ditheringParameters.pixelSize },
-                uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
-            },
-            vertexShader: terrainVertexShader,
-            fragmentShader: terrainFragmentShader,
-        })
-    }, [terrainParameters, chunkSize, borderParameters, noiseTexture, ditheringParameters])
+    const terrainMaterial = useTerrainMaterial({
+        chunkSize,
+        initialCircleRadius: START_CIRCLE_RADIUS,
+        noiseTexture,
+    })
 
-    // Grass material - shared across all chunks
-    const grassMaterial = useMemo(
-        () =>
-            new THREE.ShaderMaterial({
-                uniforms: {
-                    uPixelSize: { value: ditheringParameters.pixelSize },
-                    uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
-                    uTime: { value: 0 },
-                    uGrassSegments: { value: grassParameters.segmentsCount },
-                    uGrassChunkSize: { value: chunkSize },
-                    uGrassWidth: { value: grassParameters.width },
-                    uGrassHeight: { value: grassParameters.height },
-                    uGrassBaseColor: { value: new THREE.Color(grassParameters.colorBase) },
-                    uGrassTopColor: { value: new THREE.Color(grassParameters.colorTop) },
-                    uLeanFactor: { value: grassParameters.leanFactor },
+    const grassMaterial = useGrassMaterial({
+        chunkSize,
+        initialCircleRadius: START_CIRCLE_RADIUS,
+        noiseTexture,
+    })
 
-                    // Flowers (procedural)
-                    uFlowersEnabled: { value: grassParameters.flowersEnabled ? 1.0 : 0.0 },
-                    uFlowerDensity: { value: grassParameters.flowerDensity },
-                    uFlowerNoiseScale: { value: grassParameters.flowerNoiseScale },
-                    uFlowerHeightBoost: { value: grassParameters.flowerHeightBoost },
-                    uFlowerTipStart: { value: grassParameters.flowerTipStart },
-                    uFlowerBaseScale: { value: grassParameters.flowerBaseScale },
-                    uFlowerExpand: { value: grassParameters.flowerExpand },
-                    uFlowerColorA: { value: new THREE.Color(grassParameters.flowerColorA) },
-                    uFlowerColorB: { value: new THREE.Color(grassParameters.flowerColorB) },
-                    uFlowerColorC: { value: new THREE.Color(grassParameters.flowerColorC) },
-                    uFlowerColorD: { value: new THREE.Color(grassParameters.flowerColorD) },
-
-                    uWindScale: { value: grassParameters.windScale },
-                    uWindStrength: { value: grassParameters.windStrength },
-                    uWindSpeed: { value: grassParameters.windSpeed },
-                    uTrailTexture: { value: null },
-                    uBallPosition: { value: new THREE.Vector3() },
-                    uCircleCenter: { value: new THREE.Vector3() },
-                    uTrailCanvasSize: { value: trailParameters.chunkSize },
-                    uSobelMode: { value: grassParameters.sobelMode },
-
-                    uNoiseTexture: { value: noiseTexture },
-                    uNoiseStrength: { value: borderParameters.noiseStrength },
-                    uNoiseScale: { value: borderParameters.noiseScale },
-                    uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
-                    uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
-                    uGroundOffset: { value: borderParameters.groundOffset },
-                    uGroundFadeOffset: { value: borderParameters.groundFadeOffset },
-                },
-                vertexShader: grassVertexShader,
-                fragmentShader: grassFragmentShader,
-                side: THREE.FrontSide,
-            }),
-        [grassParameters, chunkSize, trailParameters.chunkSize, noiseTexture, borderParameters, ditheringParameters]
-    )
-
-    // Stone material (shader) - shared across all chunks
-    const stoneMaterial = useMemo(() => {
-        return new THREE.ShaderMaterial({
-            uniforms: {
-                uPixelSize: { value: ditheringParameters.pixelSize },
-                uDitherMode: { value: ditheringParameters.ditherMode === 'Bayer' ? 1 : 0 }, // 0: Diamond, 1: Bayer
-
-                uStoneColor: { value: new THREE.Color(stoneParameters.color) },
-
-                // Border fade (match grass)
-                uCircleCenter: { value: new THREE.Vector3() },
-                uChunkSize: { value: chunkSize },
-                uNoiseTexture: { value: noiseTexture },
-                uNoiseStrength: { value: borderParameters.noiseStrength },
-                uNoiseScale: { value: borderParameters.noiseScale },
-                uCircleRadiusFactor: { value: borderParameters.circleRadiusFactor },
-                uGrassFadeOffset: { value: borderParameters.grassFadeOffset },
-            },
-            vertexShader: stonesVertexShader,
-            fragmentShader: stonesFragmentShader,
-            vertexColors: false,
-            side: THREE.FrontSide,
-        })
-    }, [stoneParameters.color, chunkSize, noiseTexture, borderParameters, ditheringParameters])
+    const stoneMaterial = useStonesMaterial({
+        chunkSize,
+        initialCircleRadius: START_CIRCLE_RADIUS,
+        noiseTexture,
+    })
 
     // Shared stone geometry
     const stoneGeometry = useMemo(() => {
         return new THREE.IcosahedronGeometry(1, 0)
     }, [])
 
-    // Cleanup materials on unmount
+    const treeMaterial = useTreeMaterial({
+        chunkSize,
+        initialCircleRadius: START_CIRCLE_RADIUS,
+        noiseTexture,
+        alphaMap,
+    })
+
+    const windMaterial = useWindMaterial({
+        chunkSize,
+        initialCircleRadius: START_CIRCLE_RADIUS,
+        noiseTexture,
+    })
+
+    const windBaseGeometry = useMemo(() => {
+        const geometry = new THREE.PlaneGeometry(10, windLineWidth, 20, 1)
+        return geometry
+    }, [windLineWidth])
+
     useEffect(() => {
         return () => {
-            terrainMaterial.dispose()
-            grassMaterial.dispose()
-            stoneMaterial.dispose()
-            stoneGeometry.dispose()
+            windBaseGeometry.dispose()
         }
-    }, [terrainMaterial, grassMaterial, stoneMaterial, stoneGeometry])
+    }, [windBaseGeometry])
 
-    // Handle radius animation
-    const handleRadiusAnimation = () => {
-        const targetRadius = borderParameters.circleRadiusFactor
-        const startRadius = 0.2
+    const rigidBodyMaterial = useMemo(() => {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+        mat.visible = false
+        return mat
+    }, [])
 
-        // Kill previous animation if it exists
-        if (radiusAnimationRef.current) {
-            radiusAnimationRef.current.kill()
-            radiusAnimationRef.current = null
+    const setCircleRadius = (value) => {
+        circleRadiusRef.current = value
+        terrainMaterial.uniforms.uCircleRadiusFactor.value = value
+        grassMaterial.uniforms.uCircleRadiusFactor.value = value
+        stoneMaterial.uniforms.uCircleRadiusFactor.value = value
+        if (treeMaterial.uniforms?.uCircleRadiusFactor) {
+            treeMaterial.uniforms.uCircleRadiusFactor.value = value
         }
-
-        // Set initial radius to 0.2
-        terrainMaterial.uniforms.uCircleRadiusFactor.value = startRadius
-        grassMaterial.uniforms.uCircleRadiusFactor.value = startRadius
-        stoneMaterial.uniforms.uCircleRadiusFactor.value = startRadius
-
-        // Create animation object for GSAP to animate
-        const radiusObj = { value: startRadius }
-
-        // Animate radius from 0.2 to target value
-        radiusAnimationRef.current = gsap.to(radiusObj, {
-            value: targetRadius,
-            duration: 1.2,
-            ease: 'power2.out',
-            onUpdate: () => {
-                // Update both materials' circle radius factor
-                terrainMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
-                grassMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
-                stoneMaterial.uniforms.uCircleRadiusFactor.value = radiusObj.value
-            },
-            onComplete: () => {
-                radiusAnimationRef.current = null
-            },
-        })
+        windMaterial.uniforms.uCircleRadiusFactor.value = value
     }
 
-    // Listen for game start trigger from Loader
-    useEffect(() => {
-        // Only trigger when it changes from false to true
-        if (phase === PHASES.start && prevPhaseRef.current !== PHASES.start) {
-            handleRadiusAnimation()
-        }
-        // Update the ref to track the current value
-        prevPhaseRef.current = phase
-    }, [phase, borderParameters, terrainMaterial, grassMaterial, setBorderParameters])
-
-    // Cleanup animations on unmount
     useEffect(() => {
         return () => {
             if (radiusAnimationRef.current) {
                 radiusAnimationRef.current.kill()
                 radiusAnimationRef.current = null
             }
+            stoneGeometry.dispose()
+            rigidBodyMaterial.dispose()
+            noiseTexture.dispose()
+            alphaMap.dispose()
         }
-    }, [])
+    }, [stoneGeometry, rigidBodyMaterial, noiseTexture, alphaMap])
+
+    useEffect(() => {
+        const wasStarted = prevPhaseRef.current === PHASES.start
+
+        if (phase === PHASES.start) {
+            if (!wasStarted) {
+                const targetRadius = borderCircleRadius
+                const startRadius = START_CIRCLE_RADIUS
+
+                if (radiusAnimationRef.current) {
+                    radiusAnimationRef.current.kill()
+                    radiusAnimationRef.current = null
+                }
+
+                setCircleRadius(startRadius)
+
+                const radiusObj = { value: startRadius }
+                radiusAnimationRef.current = gsap.to(radiusObj, {
+                    value: targetRadius,
+                    duration: 2.0,
+                    delay: START_RADIUS_DELAY,
+                    ease: 'power2.out',
+                    onUpdate: () => {
+                        setCircleRadius(radiusObj.value)
+                    },
+                    onComplete: () => {
+                        radiusAnimationRef.current = null
+                    },
+                })
+            } else if (!radiusAnimationRef.current) {
+                setCircleRadius(borderCircleRadius)
+            }
+        } else if (!radiusAnimationRef.current) {
+            setCircleRadius(START_CIRCLE_RADIUS)
+        }
+
+        prevPhaseRef.current = phase
+    }, [phase, borderCircleRadius])
 
     useFrame(({ clock }) => {
         const state = useStore.getState()
@@ -238,6 +187,17 @@ export default function Terrain() {
 
         // Update stones uniforms (no rerenders required)
         stoneMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+
+        // Update tree material uniforms
+        if (treesEnabled && treeMaterial.uniforms) {
+            treeMaterial.uniforms.uTime.value = clock.elapsedTime
+            treeMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
+            treeMaterial.uniforms.uBallPosition.value.copy(state.ballPosition)
+        }
+
+        // Update wind uniforms
+        windMaterial.uniforms.uTime.value = clock.elapsedTime
+        windMaterial.uniforms.uCircleCenter.value.copy(state.smoothedCircleCenter)
 
         // Chunk management
         const ballPosition = state.ballPosition
@@ -276,8 +236,25 @@ export default function Terrain() {
                     grassMaterial={grassMaterial}
                     stoneMaterial={stoneMaterial}
                     stoneGeometry={stoneGeometry}
+                    windBaseGeometry={windBaseGeometry}
+                    windMaterial={windMaterial}
+                    windLineParameters={windLineParameters}
+                    windDirection={windDirection}
+                    windEnabled={windEnabled}
                 />
             ))}
+            {treesEnabled && (
+                <Trees
+                    activeChunks={activeChunks}
+                    chunkSize={chunkSize}
+                    noise2D={noise2D}
+                    stoneParameters={stoneParameters}
+                    terrainScale={terrainScale}
+                    terrainAmplitude={terrainAmplitude}
+                    treeMaterial={treeMaterial}
+                    rigidBodyMaterial={rigidBodyMaterial}
+                />
+            )}
         </group>
     )
 }

@@ -3,7 +3,6 @@ import { Perf } from 'r3f-perf'
 
 import Lights from './Lights.jsx'
 import Ball from './Ball.jsx'
-import { Tree } from './Tree.jsx'
 import Terrain from './Terrain.jsx'
 import BallTrailCanvas from './BallTrailCanvas.jsx'
 import Controls from './Controls.jsx'
@@ -23,7 +22,6 @@ export default function Experience() {
 
             <Physics debug={physicsDebug}>
                 <Lights />
-                <Tree position={[2, 0, 0]} />
                 <Terrain />
                 <Ball />
             </Physics>

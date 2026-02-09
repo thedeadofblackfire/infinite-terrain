@@ -6,10 +6,14 @@ export default function Controls() {
     const borderParameters = useStore((state) => state.borderParameters)
     const ditheringParameters = useStore((state) => state.ditheringParameters)
     const grassParameters = useStore((state) => state.grassParameters)
+    const windParameters = useStore((state) => state.windParameters)
+    const windLineParameters = useStore((state) => state.windLineParameters)
     const stoneParameters = useStore((state) => state.stoneParameters)
     const treeParameters = useStore((state) => state.treeParameters)
     const trailParameters = useStore((state) => state.trailParameters)
     const ballParameters = useStore((state) => state.ballParameters)
+    const ballFadeParameters = useStore((state) => state.ballFadeParameters)
+    const generalParameters = useStore((state) => state.generalParameters)
     const perfVisible = useStore((state) => state.perfVisible)
     const physicsDebug = useStore((state) => state.physicsDebug)
     const backgroundWireframe = useStore((state) => state.backgroundWireframe)
@@ -27,6 +31,26 @@ export default function Controls() {
      * General parameters
      */
     useControls('General', {
+        trees: {
+            value: generalParameters.trees,
+            onChange: setParam('generalParameters', 'trees'),
+        },
+        wind: {
+            value: generalParameters.wind,
+            onChange: setParam('generalParameters', 'wind'),
+        },
+        flowers: {
+            value: grassParameters.flowersEnabled,
+            onChange: setParam('grassParameters', 'flowersEnabled'),
+        },
+        stones: {
+            value: stoneParameters.enabled,
+            onChange: setParam('stoneParameters', 'enabled'),
+        },
+        canvas: {
+            value: trailParameters.showCanvas,
+            onChange: setParam('trailParameters', 'showCanvas'),
+        },
         perfMonitor: {
             value: perfVisible,
             onChange: (value) => useStore.getState().setPerfVisible(value),
@@ -129,6 +153,13 @@ export default function Controls() {
             step: 0.01,
             onChange: setParam('borderParameters', 'groundFadeOffset'),
         },
+        treeBorderMul: {
+            value: borderParameters.borderTreesMultiplier,
+            min: 0.1,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('borderParameters', 'borderTreesMultiplier'),
+        },
     })
 
     /**
@@ -201,26 +232,94 @@ export default function Controls() {
             value: grassParameters.sobelMode === 2.0 ? '8 tap Sobel' : grassParameters.sobelMode === 1.0 ? '4 tap central difference' : '2 tap approximation',
             onChange: (value) => setParam('grassParameters', 'sobelMode')(value === '8 tap Sobel' ? 2.0 : value === '4 tap central difference' ? 1.0 : 0.0),
         },
-        wScale: {
-            value: grassParameters.windScale,
+    })
+
+    /**
+     * Wind parameters
+     */
+    useControls('Wind', {
+        direction: {
+            value: windParameters.direction,
+            min: 0,
+            max: Math.PI * 2,
+            step: 0.01,
+            onChange: setParam('windParameters', 'direction'),
+        },
+        strength: {
+            value: windParameters.strength,
+            min: 0,
+            max: 1.5,
+            step: 0.01,
+            onChange: setParam('windParameters', 'strength'),
+        },
+        speed: {
+            value: windParameters.speed,
+            min: 0,
+            max: 2.5,
+            step: 0.01,
+            onChange: setParam('windParameters', 'speed'),
+        },
+        scale: {
+            value: windParameters.scale,
             min: 0,
             max: 1,
             step: 0.01,
-            onChange: setParam('grassParameters', 'windScale'),
+            onChange: setParam('windParameters', 'scale'),
         },
-        wStrength: {
-            value: grassParameters.windStrength,
+    })
+
+    /**
+     * Wind line parameters
+     */
+    useControls('Wind Lines', {
+        gridSpacing: {
+            value: windLineParameters.gridSpacing,
+            min: 0.5,
+            max: 10,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'gridSpacing'),
+        },
+        height: {
+            value: windLineParameters.height,
+            min: -5,
+            max: 10,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'height'),
+        },
+        heightVariation: {
+            value: windLineParameters.heightVariationRange,
+            min: 0,
+            max: 5,
+            step: 0.1,
+            onChange: setParam('windLineParameters', 'heightVariationRange'),
+        },
+        timeMultiplier: {
+            value: windLineParameters.timeMultiplier,
+            min: 0,
+            max: 0.5,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'timeMultiplier'),
+        },
+        alphaMultiplier: {
+            value: windLineParameters.alphaMultiplier,
             min: 0,
             max: 1,
             step: 0.01,
-            onChange: setParam('grassParameters', 'windStrength'),
+            onChange: setParam('windLineParameters', 'alphaMultiplier'),
         },
-        wSpeed: {
-            value: grassParameters.windSpeed,
-            min: 0,
-            max: 2,
+        length: {
+            value: windLineParameters.lengthMultiplier,
+            min: 0.1,
+            max: 3,
             step: 0.01,
-            onChange: setParam('grassParameters', 'windSpeed'),
+            onChange: setParam('windLineParameters', 'lengthMultiplier'),
+        },
+        width: {
+            value: windLineParameters.width,
+            min: 0.02,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('windLineParameters', 'width'),
         },
     })
 
@@ -228,10 +327,6 @@ export default function Controls() {
      * Flowers (procedural on grass shader)
      */
     useControls('Flowers', {
-        enabled: {
-            value: grassParameters.flowersEnabled,
-            onChange: setParam('grassParameters', 'flowersEnabled'),
-        },
         density: {
             value: grassParameters.flowerDensity,
             min: 0,
@@ -296,14 +391,10 @@ export default function Controls() {
      * Stones (instanced)
      */
     useControls('Stones', {
-        enabled: {
-            value: stoneParameters.enabled,
-            onChange: setParam('stoneParameters', 'enabled'),
-        },
         count: {
             value: stoneParameters.count,
             min: 0,
-            max: 500,
+            max: 10,
             step: 1,
             onChange: setParam('stoneParameters', 'count'),
         },
@@ -443,7 +534,7 @@ export default function Controls() {
             value: treeParameters.trunkColorB,
             onChange: setParam('treeParameters', 'trunkColorB'),
         },
-        
+
         angleMax: {
             value: treeParameters.boneAngleMax,
             min: 0.0,
@@ -532,10 +623,6 @@ export default function Controls() {
             step: 0.01,
             onChange: setParam('trailParameters', 'glowAlpha'),
         },
-        showCanvas: {
-            value: trailParameters.showCanvas,
-            onChange: setParam('trailParameters', 'showCanvas'),
-        },
     })
 
     /**
@@ -545,6 +632,47 @@ export default function Controls() {
         color: {
             value: ballParameters.color,
             onChange: setParam('ballParameters', 'color'),
+        },
+    })
+
+    /**
+     * Ball fade parameters
+     */
+    useControls('BallFade', {
+        radius: {
+            value: ballFadeParameters.radius,
+            min: 0.1,
+            max: 4.0,
+            step: 0.01,
+            onChange: setParam('ballFadeParameters', 'radius'),
+        },
+        width: {
+            value: ballFadeParameters.width,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('ballFadeParameters', 'width'),
+        },
+        noiseScale: {
+            value: ballFadeParameters.noiseScale,
+            min: 0.0,
+            max: 1.0,
+            step: 0.001,
+            onChange: setParam('ballFadeParameters', 'noiseScale'),
+        },
+        noiseStrength: {
+            value: ballFadeParameters.noiseStrength,
+            min: 0.0,
+            max: 2.0,
+            step: 0.01,
+            onChange: setParam('ballFadeParameters', 'noiseStrength'),
+        },
+        maxFade: {
+            value: ballFadeParameters.maxFade,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+            onChange: setParam('ballFadeParameters', 'maxFade'),
         },
     })
 

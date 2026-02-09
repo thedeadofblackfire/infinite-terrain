@@ -2,9 +2,9 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla'
 
-import treeVertexShader from '../../shaders/tree/vertex.glsl'
-import treeFragmentShader from '../../shaders/tree/fragment.glsl'
-import useStore from '../../stores/useStore.jsx'
+import treeVertexShader from '../shaders/tree/vertex.glsl'
+import treeFragmentShader from '../shaders/tree/fragment.glsl'
+import useStore from '../stores/useStore.jsx'
 
 export default function useTreeMaterial({ chunkSize, initialCircleRadius, noiseTexture, alphaMap }) {
     const treeParameters = useStore((s) => s.treeParameters)

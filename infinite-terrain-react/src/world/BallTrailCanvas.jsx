@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 import useStore from '../stores/useStore.jsx'
+import glowTextureUrl from '../assets/textures/glow.png'
 
 export default function BallTrailCanvas() {
     const setTrailTexture = useStore((state) => state.setTrailTexture)
@@ -41,7 +42,7 @@ export default function BallTrailCanvas() {
         texture.wrapT = THREE.ClampToEdgeWrapping
 
         const glowImage = new Image()
-        glowImage.src = './textures/glow.png'
+        glowImage.src = glowTextureUrl
 
         canvasRef.current = canvas
         textureRef.current = texture

@@ -7,15 +7,15 @@ import * as THREE from 'three'
 
 import TerrainChunk from './TerrainChunk.jsx'
 import Trees from './Trees.jsx'
-import useTerrainMaterial from './materials/TerrainMaterial.jsx'
-import useGrassMaterial from './materials/GrassMaterial.jsx'
-import useStonesMaterial from './materials/StonesMaterial.jsx'
-import useTreeMaterial from './materials/TreeMaterial.jsx'
-import useWindMaterial from './materials/WindMaterial.jsx'
+import useTerrainMaterial from '../materials/TerrainMaterial.jsx'
+import useGrassMaterial from '../materials/GrassMaterial.jsx'
+import useStonesMaterial from '../materials/StonesMaterial.jsx'
+import useTreeMaterial from '../materials/TreeMaterial.jsx'
+import useWindMaterial from '../materials/WindMaterial.jsx'
 import useStore from '../stores/useStore.jsx'
 import usePhases, { PHASES } from '../stores/usePhases.jsx'
 
-import noiseTextureUrl from '/textures/noiseTexture.png'
+import noiseTextureUrl from '../assets/textures/noiseTexture.png'
 import alphaLeavesUrl from '../assets/textures/alpha_leaves.png'
 
 const START_CIRCLE_RADIUS = 0.07

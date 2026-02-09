@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 
-import stonesVertexShader from '../../shaders/stones/vertex.glsl'
-import stonesFragmentShader from '../../shaders/stones/fragment.glsl'
-import useStore from '../../stores/useStore.jsx'
+import stonesVertexShader from '../shaders/stones/vertex.glsl'
+import stonesFragmentShader from '../shaders/stones/fragment.glsl'
+import useStore from '../stores/useStore.jsx'
 
 export default function useStonesMaterial({
     chunkSize,

@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 
-import grassVertexShader from '../../shaders/grass/vertex.glsl'
-import grassFragmentShader from '../../shaders/grass/fragment.glsl'
-import useStore from '../../stores/useStore.jsx'
+import grassVertexShader from '../shaders/grass/vertex.glsl'
+import grassFragmentShader from '../shaders/grass/fragment.glsl'
+import useStore from '../stores/useStore.jsx'
 
 export default function useGrassMaterial({
     chunkSize,

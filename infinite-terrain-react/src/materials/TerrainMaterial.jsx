@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 
-import terrainVertexShader from '../../shaders/terrain/vertex.glsl'
-import terrainFragmentShader from '../../shaders/terrain/fragment.glsl'
-import useStore from '../../stores/useStore.jsx'
+import terrainVertexShader from '../shaders/terrain/vertex.glsl'
+import terrainFragmentShader from '../shaders/terrain/fragment.glsl'
+import useStore from '../stores/useStore.jsx'
 
 export default function useTerrainMaterial({
     chunkSize,

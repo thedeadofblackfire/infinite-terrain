@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 
-import windLineVertexShader from '../../shaders/windLine/vertex.glsl'
-import windLineFragmentShader from '../../shaders/windLine/fragment.glsl'
-import useStore from '../../stores/useStore.jsx'
+import windLineVertexShader from '../shaders/wind/vertex.glsl'
+import windLineFragmentShader from '../shaders/wind/fragment.glsl'
+import useStore from '../stores/useStore.jsx'
 
 export default function useWindMaterial({ chunkSize, initialCircleRadius, noiseTexture }) {
     const borderParameters = useStore((s) => s.borderParameters)

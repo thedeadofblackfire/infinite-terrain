@@ -210,6 +210,14 @@ const createStore = () =>
             },
 
             /**
+             * General toggles
+             */
+            generalParameters: {
+                trees: true,
+                wind: true,
+            },
+
+            /**
              * Performance & Debug parameters
              */
             perfVisible: false,

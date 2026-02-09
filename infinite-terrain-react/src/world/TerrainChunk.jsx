@@ -22,6 +22,7 @@ export default function TerrainChunk({
     windMaterial,
     windLineParameters,
     windDirection,
+    windEnabled,
 }) {
     const terrainParameters = useStore((s) => s.terrainParameters)
     const stoneParameters = useStore((s) => s.stoneParameters)
@@ -77,17 +78,19 @@ export default function TerrainChunk({
 
             <Stones key={stonesKey} stones={stoneField.currentStones} maxCount={stoneField.capacity} stoneMaterial={stoneMaterial} stoneGeometry={stoneGeometry} />
 
-            <WindChunk
-                chunkX={x}
-                chunkZ={z}
-                size={size}
-                baseGeometry={windBaseGeometry}
-                windLineParameters={windLineParameters}
-                windDirection={windDirection}
-                terrainScale={terrainScale}
-                terrainAmplitude={terrainAmplitude}
-                material={windMaterial}
-            />
+            {windEnabled && (
+                <WindChunk
+                    chunkX={x}
+                    chunkZ={z}
+                    size={size}
+                    baseGeometry={windBaseGeometry}
+                    windLineParameters={windLineParameters}
+                    windDirection={windDirection}
+                    terrainScale={terrainScale}
+                    terrainAmplitude={terrainAmplitude}
+                    material={windMaterial}
+                />
+            )}
         </group>
     )
 }

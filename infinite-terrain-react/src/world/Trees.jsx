@@ -7,17 +7,7 @@ import treeUrl from '../assets/models/tree.glb'
 
 const TREE_POOL_SIZE = 18
 
-export default function Trees({
-    activeChunks,
-    chunkSize,
-    noise2D,
-    stoneParameters,
-    terrainScale,
-    terrainAmplitude,
-    leavesMaterial,
-    trunkMaterial,
-    rigidBodyMaterial,
-}) {
+export default function Trees({ activeChunks, chunkSize, noise2D, stoneParameters, terrainScale, terrainAmplitude, treeMaterial, rigidBodyMaterial }) {
     const treeModel = useGLTF(treeUrl)
     const treePoolStateRef = useRef({
         slots: Array.from({ length: TREE_POOL_SIZE }, () => ({ id: null, data: null })),
@@ -93,8 +83,7 @@ export default function Trees({
                         scale={scale}
                         seed={seed}
                         visible={visible}
-                        leavesMaterial={leavesMaterial}
-                        trunkMaterial={trunkMaterial}
+                        treeMaterial={treeMaterial}
                         rigidBodyMaterial={rigidBodyMaterial}
                         treeScene={treeModel.scene}
                     />

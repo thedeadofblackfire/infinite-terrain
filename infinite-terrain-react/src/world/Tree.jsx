@@ -6,7 +6,6 @@ import * as THREE from 'three'
 import { SkeletonUtils } from 'three-stdlib'
 import useStore from '../stores/useStore.jsx'
 import { mulberry32 } from './utils/randomUtils.js'
-import { TreeLeaves } from './TreeLeaves.jsx'
 import trunkData from './data/trunks.json'
 
 const TREE_BONE_WIND_SEED = 90210
@@ -50,7 +49,10 @@ export function Tree(props) {
     const treeScale = (props.scale ?? 1) * 1.5
 
     const boneRoot = useMemo(() => {
-        return nodes?.Bone?.isBone ? nodes.Bone : nodes?.trunk?.skeleton?.bones?.[0] ?? null
+        if (nodes?.trunk_01?.isBone) return nodes.trunk_01
+        if (nodes?.tree?.skeleton?.bones?.[0]) return nodes.tree.skeleton.bones[0]
+        if (nodes?.Bone?.isBone) return nodes.Bone
+        return null
     }, [nodes])
 
     const trunkEntries = useMemo(() => {
@@ -192,15 +194,14 @@ export function Tree(props) {
         }
     })
 
-    if (!boneRoot || !nodes?.trunk) return null
+    if (!boneRoot || !nodes?.tree) return null
 
     return (
         <>
             <group {...props} scale={treeScale}>
                 <group ref={innerRef} rotation-y={Math.PI / 2}>
-                    <skinnedMesh geometry={nodes.trunk.geometry} material={props.trunkMaterial} skeleton={nodes.trunk.skeleton} dispose={null} />
+                    <skinnedMesh geometry={nodes.tree.geometry} material={props.treeMaterial} skeleton={nodes.tree.skeleton} dispose={null} />
                     <primitive object={boneRoot} />
-                    <TreeLeaves nodes={nodes} rootRef={innerRef} boneRoot={boneRoot} leavesMaterial={props.leavesMaterial} />
                 </group>
             </group>
             {trunkColliderGeometry && trunkInstances.length > 0 && (

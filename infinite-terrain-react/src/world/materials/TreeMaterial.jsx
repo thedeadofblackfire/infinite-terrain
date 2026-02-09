@@ -2,16 +2,11 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla'
 
-import bushesVertexShader from '../../shaders/leaves/vertex.glsl'
-import bushesFragmentShader from '../../shaders/leaves/fragment.glsl'
+import treeVertexShader from '../../shaders/tree/vertex.glsl'
+import treeFragmentShader from '../../shaders/tree/fragment.glsl'
 import useStore from '../../stores/useStore.jsx'
 
-export default function useLeavesMaterial({
-    chunkSize,
-    initialCircleRadius,
-    noiseTexture,
-    alphaMap,
-}) {
+export default function useTreeMaterial({ chunkSize, initialCircleRadius, noiseTexture, alphaMap }) {
     const treeParameters = useStore((s) => s.treeParameters)
     const ballFadeParameters = useStore((s) => s.ballFadeParameters)
     const borderTreesMultiplier = useStore((s) => s.borderParameters.borderTreesMultiplier)
@@ -20,7 +15,6 @@ export default function useLeavesMaterial({
     const borderGrassFadeOffset = useStore((s) => s.borderParameters.grassFadeOffset)
     const pixelSize = useStore((s) => s.ditheringParameters.pixelSize)
     const ditherModeValue = useStore((s) => (s.ditheringParameters.ditherMode === 'Bayer' ? 1 : 0))
-
     const material = useMemo(() => {
         return new CustomShaderMaterial({
             baseMaterial: THREE.MeshStandardMaterial,
@@ -36,6 +30,8 @@ export default function useLeavesMaterial({
                 uFresnelPower: { value: treeParameters.bushFresnelPower },
                 uFresnelStrength: { value: treeParameters.bushFresnelStrength },
                 uFresnelColor: { value: new THREE.Color(treeParameters.bushFresnelColor) },
+                uAlphaMap: { value: alphaMap },
+                uAlphaTest: { value: treeParameters.bushAlphaTest },
 
                 uCircleCenter: { value: new THREE.Vector3() },
                 uChunkSize: { value: chunkSize },
@@ -51,17 +47,17 @@ export default function useLeavesMaterial({
                 uBallNoiseStrength: { value: ballFadeParameters.noiseStrength },
                 uBallFadeMax: { value: ballFadeParameters.maxFade },
                 uPixelSize: { value: pixelSize },
-                uDitherMode: { value: ditherModeValue }, // 0: Diamond, 1: Bayer
+                uDitherMode: { value: ditherModeValue },
             },
-            vertexShader: bushesVertexShader,
-            fragmentShader: bushesFragmentShader,
+            vertexShader: treeVertexShader,
+            fragmentShader: treeFragmentShader,
             color: new THREE.Color(treeParameters.leavesColor),
-            alphaMap: alphaMap,
+            alphaMap: null,
             transparent: false,
             side: THREE.DoubleSide,
             depthWrite: true,
             alphaToCoverage: false,
-            alphaTest: treeParameters.bushAlphaTest,
+            alphaTest: 0,
             roughness: 1.0,
             metalness: 0.0,
         })
@@ -79,6 +75,8 @@ export default function useLeavesMaterial({
         u.uFresnelPower.value = treeParameters.bushFresnelPower
         u.uFresnelStrength.value = treeParameters.bushFresnelStrength
         u.uFresnelColor.value.set(treeParameters.bushFresnelColor)
+        u.uAlphaMap.value = alphaMap
+        u.uAlphaTest.value = treeParameters.bushAlphaTest
 
         u.uChunkSize.value = chunkSize
         u.uNoiseStrength.value = borderNoiseStrength
@@ -95,12 +93,12 @@ export default function useLeavesMaterial({
 
         material.color.set(treeParameters.leavesColor)
 
-        if (material.alphaMap !== alphaMap) {
-            material.alphaMap = alphaMap
+        if (material.alphaMap !== null) {
+            material.alphaMap = null
             material.needsUpdate = true
         }
-        if (material.alphaTest !== treeParameters.bushAlphaTest) {
-            material.alphaTest = treeParameters.bushAlphaTest
+        if (material.alphaTest !== 0) {
+            material.alphaTest = 0
             material.needsUpdate = true
         }
     }, [

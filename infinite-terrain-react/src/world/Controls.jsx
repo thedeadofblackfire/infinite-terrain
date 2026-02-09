@@ -13,6 +13,7 @@ export default function Controls() {
     const trailParameters = useStore((state) => state.trailParameters)
     const ballParameters = useStore((state) => state.ballParameters)
     const ballFadeParameters = useStore((state) => state.ballFadeParameters)
+    const generalParameters = useStore((state) => state.generalParameters)
     const perfVisible = useStore((state) => state.perfVisible)
     const physicsDebug = useStore((state) => state.physicsDebug)
     const backgroundWireframe = useStore((state) => state.backgroundWireframe)
@@ -30,6 +31,26 @@ export default function Controls() {
      * General parameters
      */
     useControls('General', {
+        trees: {
+            value: generalParameters.trees,
+            onChange: setParam('generalParameters', 'trees'),
+        },
+        wind: {
+            value: generalParameters.wind,
+            onChange: setParam('generalParameters', 'wind'),
+        },
+        flowers: {
+            value: grassParameters.flowersEnabled,
+            onChange: setParam('grassParameters', 'flowersEnabled'),
+        },
+        stones: {
+            value: stoneParameters.enabled,
+            onChange: setParam('stoneParameters', 'enabled'),
+        },
+        canvas: {
+            value: trailParameters.showCanvas,
+            onChange: setParam('trailParameters', 'showCanvas'),
+        },
         perfMonitor: {
             value: perfVisible,
             onChange: (value) => useStore.getState().setPerfVisible(value),
@@ -306,10 +327,6 @@ export default function Controls() {
      * Flowers (procedural on grass shader)
      */
     useControls('Flowers', {
-        enabled: {
-            value: grassParameters.flowersEnabled,
-            onChange: setParam('grassParameters', 'flowersEnabled'),
-        },
         density: {
             value: grassParameters.flowerDensity,
             min: 0,
@@ -374,10 +391,6 @@ export default function Controls() {
      * Stones (instanced)
      */
     useControls('Stones', {
-        enabled: {
-            value: stoneParameters.enabled,
-            onChange: setParam('stoneParameters', 'enabled'),
-        },
         count: {
             value: stoneParameters.count,
             min: 0,
@@ -609,10 +622,6 @@ export default function Controls() {
             max: 1,
             step: 0.01,
             onChange: setParam('trailParameters', 'glowAlpha'),
-        },
-        showCanvas: {
-            value: trailParameters.showCanvas,
-            onChange: setParam('trailParameters', 'showCanvas'),
         },
     })
 

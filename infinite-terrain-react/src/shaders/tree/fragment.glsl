@@ -1,6 +1,8 @@
 uniform float uFresnelPower;
 uniform float uFresnelStrength;
 uniform vec3 uFresnelColor;
+uniform sampler2D uAlphaMap;
+uniform float uAlphaTest;
 uniform vec3 uCircleCenter;
 uniform float uChunkSize;
 uniform sampler2D uNoiseTexture;
@@ -19,6 +21,8 @@ uniform float uPixelSize;
 uniform int uDitherMode;
 
 varying vec3 vWorldPosition;
+varying vec2 vUv1;
+varying vec2 vUv;
 
 // --- Dither Functions ---
 float getDiamondThreshold(vec2 fragCoord, float pixelSize) {
@@ -82,6 +86,7 @@ float getBallFade(vec3 worldPos) {
 }
 
 void main() {
+
   csm_FragNormal = normalize(vNormal);
 
   // Fresnel based on view-space normal & view direction.
@@ -90,8 +95,30 @@ void main() {
   float ndv = clamp(dot(N, V), 0.0, 1.0);
   float fresnel = pow(1.0 - ndv, uFresnelPower) * uFresnelStrength;
 
-  // Brighten at grazing angles (sphere-like rim light)
-  csm_DiffuseColor.rgb = mix(csm_DiffuseColor.rgb, uFresnelColor, clamp(fresnel, 0.0, 1.0));
+  float leafMask = step(0.5, vUv1.y);
+  vec3 baseColor = csm_DiffuseColor.rgb;
+
+  if (leafMask < 0.5) {
+      // trunk
+      if (vUv.y < 0.5) {
+        baseColor = vec3(1.0);
+      } else {
+        baseColor = vec3(0.0);
+      }
+  }
+
+  // Brighten at grazing angles (sphere-like rim light) - leaves only
+  baseColor = mix(baseColor, uFresnelColor, clamp(fresnel, 0.0, 1.0) * leafMask);
+
+  // Alpha cutout - leaves only
+  if (leafMask > 0.5) {
+      float alpha = texture2D(uAlphaMap, vUv).r;
+      if (alpha < uAlphaTest) {
+          discard;
+      }
+  }
+
+  csm_DiffuseColor.rgb = baseColor;
 
   vec2 worldXZ = vWorldPosition.xz;
   vec2 circleXZ = uCircleCenter.xz;
